@@ -1,3 +1,4 @@
 <Solution>
   <Project Path="src/SimisSharp/SimisSharp.csproj" />
+  <Project Path="tests/SimisSharp.Tests/SimisSharp.Tests.csproj" Id="b385083b-12bc-4bc8-b93d-fa5671b01f0c" />
 </Solution>
