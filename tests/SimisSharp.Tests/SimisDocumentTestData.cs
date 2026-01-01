@@ -115,7 +115,7 @@ SectionIdx ( 2
 	TrackPath ( 264 1 378 )
 )
 """,
-            new SimisWriterOptions { IndentCharacter = '\t', IndentSize = 1 },
+            new SimisWriterOptions { IndentCharacter = '\t', IndentSize = 1, PreserveComments = true },
         };
 
         yield return new object[]
@@ -134,7 +134,7 @@ shape ( US2BNSFCar.s
 	ESD_Bounding_Box ( -1.60179 0.8024 -10.51718 1.5172 3.77019 10.48826 )
 )
 """,
-            new SimisWriterOptions { IndentCharacter = '\t', IndentSize = 1 },
+            new SimisWriterOptions { IndentCharacter = '\t', IndentSize = 1, PreserveComments = true },
         };
 
         yield return new object[]
@@ -209,7 +209,64 @@ Tr_SMS (
 	)
 )
 """,
-            new SimisWriterOptions { IndentCharacter = '\t', IndentSize = 1 },
+            new SimisWriterOptions { IndentCharacter = '\t', IndentSize = 1, PreserveComments = true },
+        };
+
+        yield return new object[]
+        {
+"""
+SIMISA@@@@@@@@@@JINX0w1t______
+
+Skip
+(
+  Screens in this file are ordered as follows:
+
+  Main Menu                   #0
+  Activity & Route Selection  #1
+  Introductory Train Ride     #2
+  Toolkit                     #3
+  RouteEditor                 #4
+)
+
+
+
+TrGUI_Maingui
+(
+  TrGUI_Screen
+  (
+    TrGUI_Region
+    (
+      TrGUI_Region_Name    ( mainmenu )
+      TrGUI_Region_Surf    ( startsur )
+      TrGUI_Region_Area    ( 0 0 800 600 )
+      TrGUI_Region_Cursor  ( arrow_cur )
+	  TrGUI_Help_Context	( 1 )
+    )
+    TrGUI_Widget ( start )
+    TrGUI_Icon_Set ( 1 )
+    TrGUI_Loading_Screen ( trainloading )
+  )
+)
+""",
+"""
+SIMISA@@@@@@@@@@JINX0w1t______
+
+TrGUI_Maingui (
+  TrGUI_Screen (
+    TrGUI_Region (
+      TrGUI_Region_Name ( mainmenu )
+      TrGUI_Region_Surf ( startsur )
+      TrGUI_Region_Area ( 0 0 800 600 )
+      TrGUI_Region_Cursor ( arrow_cur )
+      TrGUI_Help_Context ( 1 )
+    )
+    TrGUI_Widget ( start )
+    TrGUI_Icon_Set ( 1 )
+    TrGUI_Loading_Screen ( trainloading )
+  )
+)
+""",
+            new SimisWriterOptions { IndentCharacter = ' ', IndentSize = 2, },
         };
     }
 

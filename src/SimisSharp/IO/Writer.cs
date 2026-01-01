@@ -16,7 +16,7 @@ internal class Writer : IWriter
             sb.AppendLine(document.Header);
         }
 
-        foreach(SimisNode node in document.Root.GetNodes())
+        foreach(SimisNode node in document.Root.GetNodes(n => !n.IsComment || options.PreserveComments))
         {
             WriteNode(sb, node, options);
         }
@@ -43,7 +43,7 @@ internal class Writer : IWriter
 
             sb.Append(space);
             sb.Append('(');
-            foreach (SimisNode subNode in node.GetNodes().Where(n => !n.IsEmptyLeaf))
+            foreach (SimisNode subNode in node.GetNodes(n => (!n.IsComment || options.PreserveComments) && !n.IsEmptyLeaf))
             {
                 if (subNode.IsLeaf)
                 {

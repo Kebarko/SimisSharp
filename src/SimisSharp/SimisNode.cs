@@ -26,6 +26,11 @@ public class SimisNode(string value)
         return subNodes.ToList();
     }
 
+    public IList<SimisNode> GetNodes(Func<SimisNode, bool> predicate)
+    {
+        return subNodes.Where(predicate).ToList();
+    }
+
     public IList<SimisNode> GetNodes(string value)
     {
         return subNodes.Where(c => c.Value == value).ToList();
