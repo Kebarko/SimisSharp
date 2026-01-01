@@ -7,7 +7,6 @@ public class SimisWriterOptions
         IndentSize = 2,
         IndentCharacter = ' ',
         PreserveComments = true,
-        PreserveQuotes = true,
         PreserveBlankLines = true,
     };
 
@@ -16,8 +15,6 @@ public class SimisWriterOptions
     public char IndentCharacter { get; set; }
 
     public bool PreserveComments { get; set; }
-
-    public bool PreserveQuotes { get; set; }
 
     public bool PreserveBlankLines { get; set; }
 }
