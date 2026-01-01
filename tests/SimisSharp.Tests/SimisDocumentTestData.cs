@@ -146,7 +146,7 @@ SIMISA@@@@@@@@@@JINX0x1t______
 
 Tr_SMS (
 
-Skip ( mono loop & spot )
+Skip( mono loop & spot )
 
 	ScalabiltyGroup( 3
 		Activation (

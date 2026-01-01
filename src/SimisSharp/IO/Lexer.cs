@@ -6,8 +6,10 @@ internal class Lexer : ILexer
     {
         Normal,
         Quoted,
-        Comment
+        Unprocessed
     }
+
+    public ICollection<string> Unprocessed => ["comment", "skip"];
 
     public IList<string> Lex(string text)
     {
@@ -18,7 +20,7 @@ internal class Lexer : ILexer
         ReadOnlySpan<char> span = text.AsSpan();
 
         int tokenStart = -1;
-        int commentDepth = 0;
+        int unprocessedDepth = 0;
         LexerState state = LexerState.Normal;
 
         for (int i = 0; i < span.Length; i++)
@@ -38,7 +40,18 @@ internal class Lexer : ILexer
                         tokenStart = i + 1;
                         state = LexerState.Quoted;
                     }
-                    else if (c == '(' || c == ')')
+                    else if (c == '(')
+                    {
+                        Emit(span, tokens, ref tokenStart, i - 1, ref state);
+                        tokens.Add(c.ToString());
+
+                        if (state == LexerState.Unprocessed)
+                        {
+                            tokenStart = i + 1;
+                            unprocessedDepth++;
+                        }
+                    }
+                    else if (c == ')')
                     {
                         Emit(span, tokens, ref tokenStart, i - 1, ref state);
                         tokens.Add(c.ToString());
@@ -55,20 +68,20 @@ internal class Lexer : ILexer
                         state = LexerState.Normal;
                     }
                     break;
-                case LexerState.Comment:
+                case LexerState.Unprocessed:
                     if (c == '(')
                     {
-                        if (commentDepth == 0)
+                        if (unprocessedDepth == 0)
                         {
                             tokens.Add(c.ToString());
                             tokenStart = i + 1;
                         }
-                        commentDepth++;
+                        unprocessedDepth++;
                     }
                     else if (c == ')')
                     {
-                        commentDepth--;
-                        if (commentDepth == 0)
+                        unprocessedDepth--;
+                        if (unprocessedDepth == 0)
                         {
                             Emit(span, tokens, ref tokenStart, i - 1, ref state);
                             tokens.Add(c.ToString());
@@ -82,15 +95,15 @@ internal class Lexer : ILexer
         if (state == LexerState.Quoted)
             throw new FormatException("Unterminated quoted string.");
 
-        if (state == LexerState.Comment)
-            throw new FormatException("Unterminated comment block.");
+        if (state == LexerState.Unprocessed)
+            throw new FormatException("Unterminated unprocessed block.");
 
         Emit(span, tokens, ref tokenStart, span.Length - 1, ref state);
 
         return tokens;
     }
 
-    private static void Emit(ReadOnlySpan<char> span, List<string> tokens, ref int start, int end, ref LexerState state)
+    private void Emit(ReadOnlySpan<char> span, List<string> tokens, ref int start, int end, ref LexerState state)
     {
         if (start >= 0 && end < span.Length && end >= start)
         {
@@ -98,10 +111,9 @@ internal class Lexer : ILexer
             tokens.Add(token);
             start = -1;
 
-            if (string.Equals("comment", token, StringComparison.OrdinalIgnoreCase) ||
-                string.Equals("skip", token, StringComparison.OrdinalIgnoreCase))
+            if (Unprocessed.Any(np => string.Equals(np, token, StringComparison.OrdinalIgnoreCase)))
             {
-                state = LexerState.Comment;
+                state = LexerState.Unprocessed;
             }
         }
     }
