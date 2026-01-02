@@ -7,6 +7,7 @@ internal class Parser : IParser
         SimisDocument document = new();
         SimisNode parent = document.Root;
         SimisNode node = document.Root;
+        int emptyLines = 0;
 
         foreach (string token in tokens)
         {
@@ -19,16 +20,24 @@ internal class Parser : IParser
                 if (ReferenceEquals(parent, node))
                     node.AddNode(new SimisNode(string.Empty));
 
+                if (node.Parent != null)
+                {
+                    node.Parent.EmptyLinesAfter = emptyLines;
+                }
+                emptyLines = 0; 
+
                 parent = parent.Parent ?? document.Root;
             }
-            else if (token.StartsWith("SIMISA", StringComparison.Ordinal))
+            else if (token == "<empty_line>")
             {
-                document.Header = token;
+                emptyLines++;
             }
             else
             {
                 node = new(token);
+                node.EmptyLinesBefore = emptyLines;
                 parent.AddNode(node);
+                emptyLines = 0;
             }
         }
 

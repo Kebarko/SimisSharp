@@ -13,6 +13,10 @@ public class SimisNode(string value)
 
     public SimisNode? Parent { get; private set; }
 
+    public int EmptyLinesBefore { get; set; }
+
+    public int EmptyLinesAfter { get; set; }
+
     public bool IsLeaf => subNodes.Count == 0;
 
     public bool IsEmptyLeaf => IsLeaf && string.IsNullOrEmpty(Value);

@@ -6,7 +6,7 @@ public class SimisDocumentTest
 {
     [Theory]
     [ClassData(typeof(SimisDocumentTestData))]
-    public void ParseAndSaveTest(string input, string expected, SimisWriterOptions? options = null)
+    public void ParseAndSaveTest(string input, string expected, WriterOptions? options = null)
     {
         // Arrange
         SimisProcessor processor = new();

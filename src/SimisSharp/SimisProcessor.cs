@@ -9,12 +9,12 @@ public class SimisProcessor(ILexer? lexer = null, IParser? parser = null, IWrite
     private readonly IParser parser = parser ?? new Parser();
     private readonly IWriter writer = writer ?? new Writer();
 
-    public string Save(SimisDocument document, SimisWriterOptions? options = null)
+    public string Save(SimisDocument document, WriterOptions? options = null)
     {
         return writer.Write(document, options);
     }
 
-    public void Save(SimisDocument document, string filePath, SimisWriterOptions? options = null)
+    public void Save(SimisDocument document, string filePath, WriterOptions? options = null)
     {
         string content = Save(document, options);
 

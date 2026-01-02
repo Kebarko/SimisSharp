@@ -2,5 +2,5 @@
 
 public interface IWriter
 {
-    string Write(SimisDocument document, SimisWriterOptions? options = null);
+    string Write(SimisDocument document, WriterOptions? options = null);
 }

@@ -49,6 +49,7 @@ TPoleConfigData ( 1
   )
 )
 """,
+            new WriterOptions { IndentCharacter = ' ', IndentSize = 2 },
         };
 
         yield return new object[]
@@ -115,7 +116,7 @@ SectionIdx ( 2
 	TrackPath ( 264 1 378 )
 )
 """,
-            new SimisWriterOptions { IndentCharacter = '\t', IndentSize = 1, PreserveComments = true },
+            new WriterOptions { IndentCharacter = '\t', IndentSize = 1 },
         };
 
         yield return new object[]
@@ -126,7 +127,6 @@ shape(US2BNSFCar.s ESD_Detail_Level(0)ESD_Software_DLev(3)ESD_Alternative_Textur
 """,
 """
 SIMISA@@@@@@@@@@JINX0t1t______
-
 shape ( US2BNSFCar.s
 	ESD_Detail_Level ( 0 )
 	ESD_Software_DLev ( 3 )
@@ -134,7 +134,6 @@ shape ( US2BNSFCar.s
 	ESD_Bounding_Box ( -1.60179 0.8024 -10.51718 1.5172 3.77019 10.48826 )
 )
 """,
-            new SimisWriterOptions { IndentCharacter = '\t', IndentSize = 1, PreserveComments = true },
         };
 
         yield return new object[]
@@ -180,7 +179,9 @@ Skip( mono loop & spot )
 SIMISA@@@@@@@@@@JINX0x1t______
 
 Tr_SMS (
+
 	Skip ( mono loop & spot )
+
 	ScalabiltyGroup ( 3
 		Activation (
 			ExternalCam ()
@@ -209,7 +210,7 @@ Tr_SMS (
 	)
 )
 """,
-            new SimisWriterOptions { IndentCharacter = '\t', IndentSize = 1, PreserveComments = true },
+            new WriterOptions { IndentCharacter = '\t', IndentSize = 1 },
         };
 
         yield return new object[]
@@ -266,7 +267,51 @@ TrGUI_Maingui (
   )
 )
 """,
-            new SimisWriterOptions { IndentCharacter = ' ', IndentSize = 2, },
+            new WriterOptions { IndentCharacter = ' ', IndentSize = 2, PreserveComments = false },
+        };
+
+        yield return new object[]
+        {
+"""
+SIMISA@@@@@@@@@@JINX0t1t______
+
+shape ( Gp38.s
+
+	ESD_Detail_Level ( 0 )
+
+
+	ESD_Software_DLev ( 2 )
+
+
+
+	ESD_Alternative_Texture ( 0 )
+
+
+
+
+	ESD_Bounding_Box ( -1.52538 0.23572 -9.12204 1.57886 4.76894 9.25626 )
+
+
+
+
+
+)
+""",
+"""
+SIMISA@@@@@@@@@@JINX0t1t______
+
+shape ( Gp38.s
+
+	ESD_Detail_Level ( 0 )
+
+	ESD_Software_DLev ( 2 )
+
+	ESD_Alternative_Texture ( 0 )
+
+	ESD_Bounding_Box ( -1.52538 0.23572 -9.12204 1.57886 4.76894 9.25626 )
+
+)
+""",
         };
     }
 
