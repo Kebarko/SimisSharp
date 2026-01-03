@@ -46,6 +46,9 @@ internal class Writer : IWriter
         {
             bool closeAtNextLine = false;
             bool insideComment = false;
+            bool valuesInColumns = options.ValuesInColumns.ContainsKey(node.Value);
+            int totalColumns = valuesInColumns ? options.ValuesInColumns[node.Value] : 0;
+            int currentColumn = 1;
 
             sb.Append(space);
             sb.Append('(');
@@ -60,8 +63,34 @@ internal class Writer : IWriter
                     }
                     else
                     {
-                        sb.Append(space);
-                        sb.Append(subNode.QuotedValue);
+                        if (valuesInColumns)
+                        {
+                            if (currentColumn == 1)
+                            {
+                                string extraIndent = new string(options.IndentCharacter, options.IndentSize);
+                                sb.AppendLine();
+                                sb.Append(indent + extraIndent);
+                            }
+                            else
+                            {
+                                sb.Append(space);
+                            }
+
+                            sb.Append(subNode.QuotedValue);
+
+                            currentColumn++;
+                            if (currentColumn > totalColumns)
+                            {
+                                currentColumn = 1;
+                            }
+
+                            closeAtNextLine = true;
+                        }
+                        else
+                        {
+                            sb.Append(space);
+                            sb.Append(subNode.QuotedValue);
+                        }
                     }
                 }
                 else

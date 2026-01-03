@@ -11,4 +11,6 @@ public class WriterOptions
     public bool PreserveEmptyLines { get; set; } = true;
 
     public bool CollapseEmptyLines { get; set; } = true;
+
+    public Dictionary<string, int> ValuesInColumns { get; set; } = new();
 }

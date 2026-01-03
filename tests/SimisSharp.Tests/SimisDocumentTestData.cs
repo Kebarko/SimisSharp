@@ -313,6 +313,39 @@ shape ( Gp38.s
 )
 """,
         };
+
+        yield return new object[]
+        {
+"""
+SIMISA@@@@@@@@@@JINX0t1t______
+
+Adheasion ( 0.2 0.4 2 0 )
+DerailRailHeight ( 4cm )
+DerailRailForce ( 2.5*250e3lbs )
+DerailBufferForce ( 200kN )
+NumWheels (	8 )
+Friction (
+	100N/m/s	1	-1mph	0	1
+	5.1N/rad/s	1	-1rad/s	0	1
+)
+AntiSlip ()
+""",
+"""
+SIMISA@@@@@@@@@@JINX0t1t______
+
+Adheasion ( 0.2 0.4 2 0 )
+DerailRailHeight ( 4cm )
+DerailRailForce ( 2.5*250e3lbs )
+DerailBufferForce ( 200kN )
+NumWheels ( 8 )
+Friction (
+	100N/m/s 1 -1mph 0 1
+	5.1N/rad/s 1 -1rad/s 0 1
+)
+AntiSlip ()
+""",
+            new WriterOptions{ ValuesInColumns = new Dictionary<string, int> { { "Friction", 5 } }}
+        };
     }
 
     IEnumerator IEnumerable.GetEnumerator()
