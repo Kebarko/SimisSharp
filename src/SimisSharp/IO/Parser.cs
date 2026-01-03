@@ -28,7 +28,7 @@ internal class Parser : IParser
 
                 parent = parent.Parent ?? document.Root;
             }
-            else if (token == "<empty_line>")
+            else if (token == "\n")
             {
                 emptyLines++;
             }

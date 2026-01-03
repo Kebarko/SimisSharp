@@ -39,7 +39,7 @@ internal class Lexer : ILexer
                             newLines++;
                             if (newLines >= 2)
                             {
-                                tokens.Add("<empty_line>");
+                                tokens.Add("\n");
                             }
                         }
                     }
