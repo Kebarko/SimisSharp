@@ -62,8 +62,7 @@ internal class Lexer : ILexer
 
                         if (state == LexerState.Unprocessed)
                         {
-                            tokenStart = i + 1;
-                            unprocessedDepth++;
+                            i--;
                         }
                     }
                     else if (c == ')')
