@@ -28,7 +28,7 @@ internal class Parser : IParser
 
                 parent = parent.Parent ?? document.Root;
             }
-            else if (token == "\n")
+            else if (token == Environment.NewLine)
             {
                 emptyLines++;
             }

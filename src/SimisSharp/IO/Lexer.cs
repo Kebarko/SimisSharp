@@ -20,8 +20,9 @@ internal class Lexer : ILexer
         ReadOnlySpan<char> span = text.AsSpan();
 
         int tokenStart = -1;
-        int newLines = 0;
-        int unprocessedDepth = 0;
+        byte carriageReturns = 0;
+        byte lineFeeds = 0;
+        byte unprocessedDepth = 0;
         LexerState state = LexerState.Normal;
 
         for (int i = 0; i < span.Length; i++)
@@ -34,13 +35,19 @@ internal class Lexer : ILexer
                     if (c == '\r' || c == '\n')
                     {
                         Emit(span, tokens, ref tokenStart, i - 1, ref state);
+                        if (c == '\r')
+                        {
+                            carriageReturns++;
+                        }
                         if (c == '\n')
                         {
-                            newLines++;
-                            if (newLines >= 2)
-                            {
-                                tokens.Add("\n");
-                            }
+                            lineFeeds++;
+                        }
+                        if (carriageReturns == 0 && lineFeeds >= 2 ||
+                            lineFeeds == 0 && carriageReturns >= 2 ||
+                            carriageReturns == lineFeeds && lineFeeds >= 2)
+                        {
+                            tokens.Add(Environment.NewLine);
                         }
                     }
                     else if (char.IsWhiteSpace(c))
@@ -52,13 +59,15 @@ internal class Lexer : ILexer
                         Emit(span, tokens, ref tokenStart, i - 1, ref state);
                         tokenStart = i + 1;
                         state = LexerState.Quoted;
-                        newLines = 0;
+                        carriageReturns = 0;
+                        lineFeeds = 0;
                     }
                     else if (c == '(')
                     {
                         Emit(span, tokens, ref tokenStart, i - 1, ref state);
                         tokens.Add(c.ToString());
-                        newLines = 0;
+                        carriageReturns = 0;
+                        lineFeeds = 0;
 
                         if (state == LexerState.Unprocessed)
                         {
@@ -69,12 +78,14 @@ internal class Lexer : ILexer
                     {
                         Emit(span, tokens, ref tokenStart, i - 1, ref state);
                         tokens.Add(c.ToString());
-                        newLines = 0;
+                        carriageReturns = 0;
+                        lineFeeds = 0;
                     }
                     else if (tokenStart < 0)
                     {
                         tokenStart = i;
-                        newLines = 0;
+                        carriageReturns = 0;
+                        lineFeeds = 0;
                     }
                     break;
                 case LexerState.Quoted:
