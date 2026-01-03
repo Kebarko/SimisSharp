@@ -9,19 +9,15 @@ public class SimisNode(string value)
 
     public string Value { get; } = value;
 
-    public string QuotedValue => Value.Contains(' ') ? $"\"{Value}\"" : Value;
-
     public SimisNode? Parent { get; private set; }
 
-    public int EmptyLinesBefore { get; set; }
-
-    public int EmptyLinesAfter { get; set; }
+    public SimisNodeFormatting Formatting { get; } = new SimisNodeFormatting();
 
     public bool IsLeaf => subNodes.Count == 0;
 
     public bool IsEmptyLeaf => IsLeaf && string.IsNullOrEmpty(Value);
 
-    public bool HasEmptySubNodes => !IsLeaf && subNodes.All(ch => string.IsNullOrEmpty(ch.Value));
+    public bool HasEmptyLeafs => !IsLeaf && subNodes.All(subNode => subNode.IsEmptyLeaf);
 
     public bool IsComment => string.Equals("comment", Value, StringComparison.OrdinalIgnoreCase) || string.Equals("skip", Value, StringComparison.OrdinalIgnoreCase);
 
@@ -50,34 +46,43 @@ public class SimisNode(string value)
         AddNode(new SimisNode(value));
     }
 
-    public void AddNode(SimisNode child)
+    public void AddNode(SimisNode subNode)
     {
-        child.Parent = this;
-        subNodes.Add(child);
+        subNode.Parent = this;
+        subNodes.Add(subNode);
     }
 
     public void RemoveNode(string value)
     {
-        foreach (SimisNode child in subNodes.Where(c => c.Value == value))
+        foreach (SimisNode subNode in subNodes.Where(c => c.Value == value))
         {
-            RemoveNode(child);
+            RemoveNode(subNode);
         }
     }
 
-    public void RemoveNode(SimisNode child)
+    public void RemoveNode(SimisNode subNode)
     {
-        if (subNodes.Remove(child))
+        if (subNodes.Remove(subNode))
         {
-            child.Parent = null;
+            subNode.Parent = null;
         }
     }
 
     public void RemoveAllNodes()
     {
-        foreach (SimisNode child in subNodes)
+        foreach (SimisNode subNode in subNodes)
         {
-            child.Parent = null;
+            subNode.Parent = null;
         }
         subNodes.Clear();
+    }
+
+    public sealed class SimisNodeFormatting()
+    {
+        public byte LeadingEmptyLines { get; set; }
+
+        public byte TrailingEmptyLines { get; set; }
+
+        public string GetQuotedValue(string value) => value.Contains(' ') ? $"\"{value}\"" : value;
     }
 }

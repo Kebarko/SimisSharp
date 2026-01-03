@@ -30,7 +30,7 @@ internal class Writer : IWriter
 
         if (options.PreserveEmptyLines)
         {
-            for (int i = 0; i < node.EmptyLinesBefore; i++)
+            for (int i = 0; i < node.Formatting.LeadingEmptyLines; i++)
             {
                 if (i > 0 && options.CollapseEmptyLines)
                     break;
@@ -40,7 +40,7 @@ internal class Writer : IWriter
         }
 
         sb.Append(indent);
-        sb.Append(node.QuotedValue);
+        sb.Append(node.Formatting.GetQuotedValue(node.Value));
 
         if (!node.IsLeaf)
         {
@@ -76,7 +76,7 @@ internal class Writer : IWriter
                                 sb.Append(space);
                             }
 
-                            sb.Append(subNode.QuotedValue);
+                            sb.Append(subNode.Formatting.GetQuotedValue(subNode.Value));
 
                             currentColumn++;
                             if (currentColumn > totalColumns)
@@ -89,7 +89,7 @@ internal class Writer : IWriter
                         else
                         {
                             sb.Append(space);
-                            sb.Append(subNode.QuotedValue);
+                            sb.Append(subNode.Formatting.GetQuotedValue(subNode.Value));
                         }
                     }
                 }
@@ -106,7 +106,7 @@ internal class Writer : IWriter
                 sb.AppendLine();
                 sb.Append(indent);
             }
-            else if (!node.HasEmptySubNodes && !insideComment)
+            else if (!node.HasEmptyLeafs && !insideComment)
             {
                 sb.Append(space);
             }
@@ -114,7 +114,7 @@ internal class Writer : IWriter
 
             if (options.PreserveEmptyLines)
             {
-                for (int i = 0; i < node.EmptyLinesAfter; i++)
+                for (int i = 0; i < node.Formatting.TrailingEmptyLines; i++)
                 {
                     if (i > 0 && options.CollapseEmptyLines)
                         break;

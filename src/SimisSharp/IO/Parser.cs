@@ -7,7 +7,7 @@ internal class Parser : IParser
         SimisDocument document = new();
         SimisNode parent = document.Root;
         SimisNode node = document.Root;
-        int emptyLines = 0;
+        byte emptyLines = 0;
 
         foreach (string token in tokens)
         {
@@ -22,7 +22,7 @@ internal class Parser : IParser
 
                 if (node.Parent != null)
                 {
-                    node.Parent.EmptyLinesAfter = emptyLines;
+                    node.Parent.Formatting.TrailingEmptyLines = emptyLines;
                 }
                 emptyLines = 0; 
 
@@ -35,7 +35,7 @@ internal class Parser : IParser
             else
             {
                 node = new(token);
-                node.EmptyLinesBefore = emptyLines;
+                node.Formatting.LeadingEmptyLines = emptyLines;
                 parent.AddNode(node);
                 emptyLines = 0;
             }
