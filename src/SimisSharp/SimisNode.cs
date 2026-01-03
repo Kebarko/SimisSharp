@@ -17,8 +17,6 @@ public class SimisNode(string value)
 
     public bool IsEmptyLeaf => IsLeaf && string.IsNullOrEmpty(Value);
 
-    public bool HasEmptyLeafs => !IsLeaf && subNodes.All(subNode => subNode.IsEmptyLeaf);
-
     public bool IsComment => string.Equals("comment", Value, StringComparison.OrdinalIgnoreCase) || string.Equals("skip", Value, StringComparison.OrdinalIgnoreCase);
 
     public IList<SimisNode> GetNodes()

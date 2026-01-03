@@ -184,12 +184,12 @@ Tr_SMS (
 
 	ScalabiltyGroup ( 3
 		Activation (
-			ExternalCam ()
+			ExternalCam ( )
 			Distance ( 500 )
 		)
 		Deactivation (
-			PassengerCam ()
-			CabCam ()
+			PassengerCam ( )
+			CabCam ( )
 			Distance ( 500 )
 		)
 		Volume ( 1.0 )
@@ -342,7 +342,7 @@ Friction (
 	100N/m/s 1 -1mph 0 1
 	5.1N/rad/s 1 -1rad/s 0 1
 )
-AntiSlip ()
+AntiSlip ( )
 """,
             new WriterOptions{ ValuesInColumns = new Dictionary<string, int> { { "Friction", 5 } }}
         };

@@ -105,7 +105,7 @@ internal class Writer : IWriter
                 sb.AppendLine();
                 sb.Append(indent);
             }
-            else if (!node.HasEmptyLeafs && !insideComment)
+            else if (!insideComment)
             {
                 sb.Append(space);
             }
