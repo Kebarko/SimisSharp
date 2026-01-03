@@ -46,8 +46,7 @@ internal class Writer : IWriter
         {
             bool closeAtNextLine = false;
             bool insideComment = false;
-            bool valuesInColumns = options.ValuesInColumns.ContainsKey(node.Value);
-            int totalColumns = valuesInColumns ? options.ValuesInColumns[node.Value] : 0;
+            bool valuesInColumns = options.ValuesInColumns.TryGetValue(node.Value, out int totalColumns);
             int currentColumn = 1;
 
             sb.Append(space);
@@ -67,9 +66,9 @@ internal class Writer : IWriter
                         {
                             if (currentColumn == 1)
                             {
-                                string extraIndent = new string(options.IndentCharacter, options.IndentSize);
                                 sb.AppendLine();
-                                sb.Append(indent + extraIndent);
+                                sb.Append(indent);
+                                sb.Append(new string(options.IndentCharacter, options.IndentSize));
                             }
                             else
                             {
