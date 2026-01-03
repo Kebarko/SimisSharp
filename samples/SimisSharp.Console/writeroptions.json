@@ -1,0 +1,12 @@
+﻿{
+  "IndentSize": 1,
+  "IndentCharacter": "\t",
+  "PreserveComments": true,
+  "PreserveEmptyLines": true,
+  "CollpaseEmptyLines": true,
+  "ValuesInColumns": {
+  "Friction": 5,
+  "Description": 2,
+  "EngineOperatingProcedures": 2
+  }
+}
