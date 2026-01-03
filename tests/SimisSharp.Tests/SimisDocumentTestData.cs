@@ -328,7 +328,7 @@ Friction (
 	100N/m/s	1	-1mph	0	1
 	5.1N/rad/s	1	-1rad/s	0	1
 )
-AntiSlip ()
+AntiSlip ("")
 """,
 """
 SIMISA@@@@@@@@@@JINX0t1t______

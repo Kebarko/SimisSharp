@@ -81,7 +81,10 @@ internal class Lexer : ILexer
                 case LexerState.Quoted:
                     if (c == '"')
                     {
-                        Emit(span, tokens, ref tokenStart, i - 1, ref state);
+                        if (tokenStart == i)
+                            tokenStart = -1;
+                        else
+                            Emit(span, tokens, ref tokenStart, i - 1, ref state);
                         state = LexerState.Normal;
                     }
                     break;
