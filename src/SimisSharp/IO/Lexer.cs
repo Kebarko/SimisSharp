@@ -81,10 +81,7 @@ internal class Lexer : ILexer
                 case LexerState.Quoted:
                     if (c == '"')
                     {
-                        if (tokenStart == i)
-                            tokenStart = -1;
-                        else
-                            Emit(span, tokens, ref tokenStart, i - 1, ref state);
+                        Emit(span, tokens, ref tokenStart, i - 1, ref state);
                         state = LexerState.Normal;
                     }
                     break;
@@ -129,12 +126,13 @@ internal class Lexer : ILexer
         {
             string token = span.Slice(start, end - start + 1).ToString();
             tokens.Add(token);
-            start = -1;
 
             if (Unprocessed.Any(np => string.Equals(np, token, StringComparison.OrdinalIgnoreCase)))
             {
                 state = LexerState.Unprocessed;
             }
         }
+
+        start = -1;
     }
 }
