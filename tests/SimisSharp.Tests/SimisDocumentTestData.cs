@@ -55,6 +55,30 @@ TPoleConfigData ( 1
         yield return new object[]
         {
 """
+ SIMISA@@@@@@@@@@JINX0r1t______ 
+""",
+"""
+SIMISA@@@@@@@@@@JINX0r1t______
+""",
+        };
+
+        yield return new object[]
+        {
+"""
+ SIMISA@@@@@@@@@@JINX0r1t______
+ 
+8
+""",
+"""
+SIMISA@@@@@@@@@@JINX0r1t______
+
+8
+""",
+        };
+
+        yield return new object[]
+        {
+"""
 SIMISA@@@@@@@@@@JINX0F0t______
 
 8
