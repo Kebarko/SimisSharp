@@ -28,16 +28,7 @@ internal class Writer : IWriter
             sb.AppendLine();
         }
 
-        if (options.PreserveEmptyLines)
-        {
-            for (int i = 0; i < node.Formatting.LeadingEmptyLines; i++)
-            {
-                if (i > 0 && options.CollapseEmptyLines)
-                    break;
-
-                sb.AppendLine();
-            }
-        }
+        WriteEmptyLines(sb, options.PreserveEmptyLines, node.Formatting.LeadingEmptyLines, options.CollapseEmptyLines);
 
         sb.Append(indent);
         sb.Append(node.Formatting.GetQuotedValue(node.Value));
@@ -111,15 +102,20 @@ internal class Writer : IWriter
             }
             sb.Append(')');
 
-            if (options.PreserveEmptyLines)
-            {
-                for (int i = 0; i < node.Formatting.TrailingEmptyLines; i++)
-                {
-                    if (i > 0 && options.CollapseEmptyLines)
-                        break;
+            WriteEmptyLines(sb, options.PreserveEmptyLines, node.Formatting.TrailingEmptyLines, options.CollapseEmptyLines);
+        }
+    }
 
-                    sb.AppendLine();
-                }
+    private static void WriteEmptyLines(StringBuilder sb, bool preserveEmptyLines, int count, bool collapseEmptyLines)
+    {
+        if (preserveEmptyLines)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                if (i > 0 && collapseEmptyLines)
+                    break;
+
+                sb.AppendLine();
             }
         }
     }
