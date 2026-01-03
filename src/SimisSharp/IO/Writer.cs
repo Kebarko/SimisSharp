@@ -16,6 +16,11 @@ internal class Writer : IWriter
             WriteNode(sb, node, options);
         }
 
+        if (sb.Length > 0 && !EndsWithNewLine(sb))
+        {
+            sb.AppendLine();
+        }
+
         return sb.ToString();
     }
 
@@ -118,5 +123,21 @@ internal class Writer : IWriter
                 sb.AppendLine();
             }
         }
+    }
+
+    private static bool EndsWithNewLine(StringBuilder sb)
+    {
+        string newLine = Environment.NewLine;
+
+        if (sb.Length < newLine.Length)
+            return false;
+
+        for (int i = 0; i < newLine.Length; i++)
+        {
+            if (sb[sb.Length - newLine.Length + i] != newLine[i])
+                return false;
+        }
+
+        return true;
     }
 }

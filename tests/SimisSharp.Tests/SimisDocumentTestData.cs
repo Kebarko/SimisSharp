@@ -48,6 +48,7 @@ TPoleConfigData ( 1
     Wire ( 0.0 6.7 0.391 )
   )
 )
+
 """,
             new WriterOptions { IndentCharacter = ' ', IndentSize = 2 },
         };
@@ -59,6 +60,7 @@ TPoleConfigData ( 1
 """,
 """
 SIMISA@@@@@@@@@@JINX0r1t______
+
 """,
         };
 
@@ -73,6 +75,7 @@ SIMISA@@@@@@@@@@JINX0r1t______
 SIMISA@@@@@@@@@@JINX0r1t______
 
 8
+
 """,
         };
 
@@ -103,6 +106,7 @@ Forest ( JP1Tree2 JP2AutoTree2.ace 14.0f 18.0f 0.9f 1.1f )
 Forest ( JP1Tree3 JP2AutoTree3.ace 10.0f 14.0f 0.9f 1.1f )
 Forest ( UKTree1 tree8.ace 20.0f 18.0f 0.9f 1.1f )
 Forest ( UKTree2 tree4.ace 19.0f 17.0f 0.9f 1.1f )
+
 """,
         };
 
@@ -139,6 +143,7 @@ SectionIdx ( 2
 	TrackPath ( 263 1 376 )
 	TrackPath ( 264 1 378 )
 )
+
 """,
             new WriterOptions { IndentCharacter = '\t', IndentSize = 1 },
         };
@@ -157,6 +162,7 @@ shape ( US2BNSFCar.s
 	ESD_Alternative_Texture ( 0 )
 	ESD_Bounding_Box ( -1.60179 0.8024 -10.51718 1.5172 3.77019 10.48826 )
 )
+
 """,
         };
 
@@ -233,6 +239,7 @@ Tr_SMS (
 		)
 	)
 )
+
 """,
             new WriterOptions { IndentCharacter = '\t', IndentSize = 1 },
         };
@@ -290,6 +297,7 @@ TrGUI_Maingui (
     TrGUI_Loading_Screen ( trainloading )
   )
 )
+
 """,
             new WriterOptions { IndentCharacter = ' ', IndentSize = 2, PreserveComments = false },
         };
@@ -335,6 +343,7 @@ shape ( Gp38.s
 	ESD_Bounding_Box ( -1.52538 0.23572 -9.12204 1.57886 4.76894 9.25626 )
 
 )
+
 """,
         };
 
@@ -367,6 +376,7 @@ Friction (
 	5.1N/rad/s 1 -1rad/s 0 1
 )
 AntiSlip ( )
+
 """,
             new WriterOptions{ ValuesInColumns = new Dictionary<string, int> { { "Friction", 5 } }}
         };
