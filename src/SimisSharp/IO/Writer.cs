@@ -47,14 +47,14 @@ internal class Writer : IWriter
 
             sb.Append(space);
             sb.Append('(');
-            foreach (SimisNode subNode in node.GetNodes(n => (!n.IsComment || options.PreserveComments) && !n.IsEmptyLeaf))
+            foreach (SimisNode subnode in node.GetNodes(n => (!n.IsComment || options.PreserveComments) && !n.IsEmptyLeaf))
             {
-                if (subNode.IsLeaf)
+                if (subnode.IsLeaf)
                 {
-                    insideComment = subNode.Parent?.IsComment == true;
+                    insideComment = subnode.Parent?.IsComment == true;
                     if (insideComment)
                     {
-                        sb.Append(subNode.Value);
+                        sb.Append(subnode.Value);
                     }
                     else
                     {
@@ -71,7 +71,7 @@ internal class Writer : IWriter
                                 sb.Append(space);
                             }
 
-                            sb.Append(subNode.Formatting.GetQuotedValue(subNode.Value));
+                            sb.Append(subnode.Formatting.GetQuotedValue(subnode.Value));
 
                             currentColumn++;
                             if (currentColumn > totalColumns)
@@ -84,7 +84,7 @@ internal class Writer : IWriter
                         else
                         {
                             sb.Append(space);
-                            sb.Append(subNode.Formatting.GetQuotedValue(subNode.Value));
+                            sb.Append(subnode.Formatting.GetQuotedValue(subnode.Value));
                         }
                     }
                 }
@@ -92,7 +92,7 @@ internal class Writer : IWriter
                 {
                     closeAtNextLine = true;
                     sb.AppendLine();
-                    WriteNode(sb, subNode, options, indentLevel + 1);
+                    WriteNode(sb, subnode, options, indentLevel + 1);
                 }
             }
 

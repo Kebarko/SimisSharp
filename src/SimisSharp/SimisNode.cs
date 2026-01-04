@@ -2,10 +2,10 @@
 
 namespace KE.MSTS.SimisSharp;
 
-[DebuggerDisplay("{Value}")]
+[DebuggerDisplay("Value='{Value}' Parent='{Parent?.Value}' Subnodes='{subnodes.Count}'")]
 public class SimisNode(string value)
 {
-    private readonly IList<SimisNode> subNodes = [];
+    private readonly IList<SimisNode> subnodes = [];
 
     public string Value { get; } = value;
 
@@ -13,7 +13,7 @@ public class SimisNode(string value)
 
     public SimisNodeFormatting Formatting { get; } = new SimisNodeFormatting();
 
-    public bool IsLeaf => subNodes.Count == 0;
+    public bool IsLeaf => subnodes.Count == 0;
 
     public bool IsEmptyLeaf => IsLeaf && string.IsNullOrEmpty(Value);
 
@@ -21,22 +21,22 @@ public class SimisNode(string value)
 
     public IList<SimisNode> GetNodes()
     {
-        return subNodes.ToList();
+        return subnodes.ToList();
     }
 
     public IList<SimisNode> GetNodes(Func<SimisNode, bool> predicate)
     {
-        return subNodes.Where(predicate).ToList();
+        return subnodes.Where(predicate).ToList();
     }
 
     public IList<SimisNode> GetNodes(string value)
     {
-        return subNodes.Where(c => c.Value == value).ToList();
+        return subnodes.Where(c => c.Value == value).ToList();
     }
 
     public SimisNode? GetNode(string value)
     {
-        return subNodes.FirstOrDefault(c => c.Value == value);
+        return subnodes.FirstOrDefault(c => c.Value == value);
     }
 
     public void AddNode(string value)
@@ -44,35 +44,35 @@ public class SimisNode(string value)
         AddNode(new SimisNode(value));
     }
 
-    public void AddNode(SimisNode subNode)
+    public void AddNode(SimisNode subnode)
     {
-        subNode.Parent = this;
-        subNodes.Add(subNode);
+        subnode.Parent = this;
+        subnodes.Add(subnode);
     }
 
     public void RemoveNode(string value)
     {
-        foreach (SimisNode subNode in subNodes.Where(c => c.Value == value))
+        foreach (SimisNode subnode in subnodes.Where(c => c.Value == value))
         {
-            RemoveNode(subNode);
+            RemoveNode(subnode);
         }
     }
 
-    public void RemoveNode(SimisNode subNode)
+    public void RemoveNode(SimisNode subnode)
     {
-        if (subNodes.Remove(subNode))
+        if (subnodes.Remove(subnode))
         {
-            subNode.Parent = null;
+            subnode.Parent = null;
         }
     }
 
     public void RemoveAllNodes()
     {
-        foreach (SimisNode subNode in subNodes)
+        foreach (SimisNode subnode in subnodes)
         {
-            subNode.Parent = null;
+            subnode.Parent = null;
         }
-        subNodes.Clear();
+        subnodes.Clear();
     }
 
     public sealed class SimisNodeFormatting()
