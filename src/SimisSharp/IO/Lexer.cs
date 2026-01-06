@@ -57,7 +57,7 @@ internal class Lexer : ILexer
                     else if (c == '"')
                     {
                         Emit(span, tokens, ref tokenStart, i - 1, ref state);
-                        tokenStart = i + 1;
+                        tokenStart = i;
                         state = LexerState.Quoted;
                         carriageReturns = 0;
                         lineFeeds = 0;
@@ -91,7 +91,7 @@ internal class Lexer : ILexer
                 case LexerState.Quoted:
                     if (c == '"')
                     {
-                        Emit(span, tokens, ref tokenStart, i - 1, ref state);
+                        Emit(span, tokens, ref tokenStart, i, ref state);
                         state = LexerState.Normal;
                     }
                     break;

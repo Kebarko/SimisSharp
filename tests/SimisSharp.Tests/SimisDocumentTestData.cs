@@ -50,7 +50,7 @@ TPoleConfigData ( 1
 )
 
 """,
-            new WriterOptions { IndentCharacter = ' ', IndentSize = 2 },
+            new WriterOptions { IndentSize = 2, IndentCharacter = ' '  },
         };
 
         yield return new object[]
@@ -108,6 +108,7 @@ Forest ( UKTree1 tree8.ace 20.0f 18.0f 0.9f 1.1f )
 Forest ( UKTree2 tree4.ace 19.0f 17.0f 0.9f 1.1f )
 
 """,
+            new WriterOptions { PreserveQuotes = false },
         };
 
         yield return new object[]
@@ -145,7 +146,6 @@ SectionIdx ( 2
 )
 
 """,
-            new WriterOptions { IndentCharacter = '\t', IndentSize = 1 },
         };
 
         yield return new object[]
@@ -230,7 +230,7 @@ Tr_SMS (
 				Triggers ( 1
 					Initial_Trigger (
 						StartLoop ( 1
-							File ( gen_1.wav -1 )
+							File ( "gen_1.wav" -1 )
 							SelectionMethod ( RandomSelection )
 						)
 					)
@@ -241,7 +241,6 @@ Tr_SMS (
 )
 
 """,
-            new WriterOptions { IndentCharacter = '\t', IndentSize = 1 },
         };
 
         yield return new object[]
@@ -299,7 +298,7 @@ TrGUI_Maingui (
 )
 
 """,
-            new WriterOptions { IndentCharacter = ' ', IndentSize = 2, PreserveComments = false },
+            new WriterOptions { IndentSize = 2, IndentCharacter = ' ', PreserveComments = false },
         };
 
         yield return new object[]

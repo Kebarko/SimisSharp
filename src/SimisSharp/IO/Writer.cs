@@ -36,7 +36,7 @@ internal class Writer : IWriter
         WriteEmptyLines(sb, options.PreserveEmptyLines, node.Formatting.LeadingEmptyLines, options.CollapseEmptyLines);
 
         sb.Append(indent);
-        sb.Append(node.Formatting.GetQuotedValue(node.Value));
+        sb.Append(node.Formatting.GetQuotedValue(node.Value, options.PreserveQuotes));
 
         if (!node.IsLeaf)
         {
@@ -71,7 +71,7 @@ internal class Writer : IWriter
                                 sb.Append(space);
                             }
 
-                            sb.Append(subnode.Formatting.GetQuotedValue(subnode.Value));
+                            sb.Append(subnode.Formatting.GetQuotedValue(subnode.Value, options.PreserveQuotes));
 
                             currentColumn++;
                             if (currentColumn > totalColumns)
@@ -84,7 +84,7 @@ internal class Writer : IWriter
                         else
                         {
                             sb.Append(space);
-                            sb.Append(subnode.Formatting.GetQuotedValue(subnode.Value));
+                            sb.Append(subnode.Formatting.GetQuotedValue(subnode.Value, options.PreserveQuotes));
                         }
                     }
                 }

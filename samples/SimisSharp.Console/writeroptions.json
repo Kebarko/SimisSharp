@@ -1,12 +1,13 @@
 ﻿{
   "IndentSize": 1,
   "IndentCharacter": "\t",
+  "PreserveQuotes": true,
   "PreserveComments": true,
   "PreserveEmptyLines": true,
   "CollpaseEmptyLines": true,
   "ValuesInColumns": {
-  "Friction": 5,
-  "Description": 2,
-  "EngineOperatingProcedures": 2
+    "Friction": 5,
+    "Description": 2,
+    "EngineOperatingProcedures": 2
   }
 }

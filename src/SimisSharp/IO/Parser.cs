@@ -34,7 +34,16 @@ internal class Parser : IParser
             }
             else
             {
-                node = new(token);
+                if (token.Length > 1 && token[0] == '"' && token[^1] == '"')
+                {
+                    node = new(token[1..^1]);
+                    node.Formatting.IsQuoted = true;
+                }
+                else
+                {
+                    node = new(token);
+                }
+
                 node.Formatting.LeadingEmptyLines = emptyLines;
                 parent.AddNode(node);
                 emptyLines = 0;

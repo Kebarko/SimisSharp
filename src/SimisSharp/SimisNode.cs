@@ -81,6 +81,8 @@ public class SimisNode(string value)
 
         public byte TrailingEmptyLines { get; set; }
 
-        public string GetQuotedValue(string value) => value.Contains(' ') ? $"\"{value}\"" : value;
+        public bool IsQuoted { get; set; }
+
+        public string GetQuotedValue(string value, bool preserveQoutes) => preserveQoutes && IsQuoted || value.Contains(' ') ? $"\"{value}\"" : value;
     }
 }

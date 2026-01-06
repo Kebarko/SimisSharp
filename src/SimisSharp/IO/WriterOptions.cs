@@ -6,6 +6,8 @@ public class WriterOptions
 
     public char IndentCharacter { get; set; } = '\t';
 
+    public bool PreserveQuotes { get; set; } = true;
+
     public bool PreserveComments { get; set; } = true;
 
     public bool PreserveEmptyLines { get; set; } = true;
