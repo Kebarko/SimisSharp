@@ -22,6 +22,7 @@ internal class Lexer : ILexer
         int tokenStart = -1;
         byte carriageReturns = 0;
         byte lineFeeds = 0;
+        bool escaped = false;
         byte unprocessedDepth = 0;
         LexerState state = LexerState.Normal;
 
@@ -54,7 +55,7 @@ internal class Lexer : ILexer
                     {
                         Emit(span, tokens, ref tokenStart, i - 1, ref state);
                     }
-                    else if (c == '"')
+                    else if (c == '"' && !escaped)
                     {
                         Emit(span, tokens, ref tokenStart, i - 1, ref state);
                         tokenStart = i;
@@ -89,7 +90,7 @@ internal class Lexer : ILexer
                     }
                     break;
                 case LexerState.Quoted:
-                    if (c == '"')
+                    if (c == '"' && !escaped)
                     {
                         Emit(span, tokens, ref tokenStart, i, ref state);
                         state = LexerState.Normal;
@@ -117,6 +118,8 @@ internal class Lexer : ILexer
                     }
                     break;
             }
+
+            escaped = c == '\\' && !escaped;
         }
 
         if (state == LexerState.Quoted)
