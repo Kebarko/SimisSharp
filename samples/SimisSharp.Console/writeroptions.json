@@ -4,7 +4,7 @@
   "PreserveQuotes": true,
   "PreserveComments": true,
   "PreserveEmptyLines": true,
-  "CollpaseEmptyLines": true,
+  "CollapseEmptyLines": true,
   "ValuesInColumns": {
     "Friction": 5,
     "Description": 2,
