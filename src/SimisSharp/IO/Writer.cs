@@ -11,7 +11,7 @@ internal class Writer : IWriter
 
         StringBuilder sb = new();
 
-        foreach(SimisNode node in document.Root.GetNodes(n => !n.IsComment || options.PreserveComments))
+        foreach(SimisNode node in document.Root.GetNodes(n => !n.IsDummy && (!n.IsComment || options.PreserveComments)))
         {
             WriteNode(sb, node, options);
         }
@@ -26,7 +26,7 @@ internal class Writer : IWriter
 
     private static void WriteNode(StringBuilder sb, SimisNode node, WriterOptions options, int indentLevel = 0)
     {
-        string indent = new string(options.IndentCharacter, indentLevel * options.IndentSize);
+        string indent = new(options.IndentCharacter, indentLevel * options.IndentSize);
 
         if (sb.Length > 0 && indentLevel == 0)
         {
@@ -42,12 +42,12 @@ internal class Writer : IWriter
         {
             bool closeAtNextLine = false;
             bool insideComment = false;
-            bool valuesInColumns = options.ValuesInColumns.TryGetValue(node.Value, out int totalColumns);
+            bool valuesInColumns = options.ValuesInColumns.TryGetValue(node.Value!, out int totalColumns);
             int currentColumn = 1;
 
             sb.Append(space);
             sb.Append('(');
-            foreach (SimisNode subnode in node.GetNodes(n => (!n.IsComment || options.PreserveComments) && !n.IsEmptyLeaf))
+            foreach (SimisNode subnode in node.GetNodes(n => !n.IsDummy && (!n.IsComment || options.PreserveComments)))
             {
                 if (subnode.IsLeaf)
                 {

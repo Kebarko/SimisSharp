@@ -18,9 +18,9 @@ internal class Parser : IParser
             else if (token is ")")
             {
                 if (ReferenceEquals(parent, node))
-                    node.AddNode(new SimisNode(string.Empty));
+                    node.AddNode(new SimisNode());
 
-                if (node.Parent != null)
+                if (node.Parent is not null)
                 {
                     node.Parent.Formatting.TrailingEmptyLines = emptyLines;
                 }

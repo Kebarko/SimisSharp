@@ -360,7 +360,7 @@ Friction (
 	100N/m/s	1	-1mph	0	1
 	5.1N/rad/s	1	-1rad/s	0	1
 )
-AntiSlip ("")
+AntiSlip ()
 """,
 """
 SIMISA@@@@@@@@@@JINX0t1t______
@@ -506,6 +506,114 @@ EngineOperatingProcedures (
 
 """,
             new WriterOptions{ IndentSize = 4, IndentCharacter = ' ', ValuesInColumns = new Dictionary<string, int> { { "EngineOperatingProcedures", 2 } } }
+        };
+
+        yield return new object[]
+        {
+"""
+SIMISA@@@@@@@@@@JINX0t1t______
+
+ActivityObject (
+	ObjectType ( WagonsList )
+	Train_Config (
+		TrainCfg ( ""
+			Name ( "Loose consist." )
+			Serial ( 16 )
+			MaxVelocity ( 33.33130 1.00000 )
+			NextWagonUID ( 8 )
+			Durability ( 1.00000 )
+			Engine (
+				UiD ( 0 )
+				EngineData ( 2000 Series2000 )
+			)
+			Wagon (
+				WagonData ( 2000ACarriage Series2000 )
+				UiD ( 1 )
+			)
+			Wagon (
+				WagonData ( 2000ACarriage Series2000 )
+				UiD ( 2 )
+			)
+			Wagon (
+				WagonData ( 2000BCarriage Series2000 )
+				UiD ( 3 )
+			)
+			Wagon (
+				WagonData ( 2000BCarriage Series2000 )
+				UiD ( 4 )
+			)
+			Wagon (
+				WagonData ( 2000ACarriage Series2000 )
+				UiD ( 5 )
+			)
+			Wagon (
+				WagonData ( 2000BCarriage Series2000 )
+				UiD ( 6 )
+			)
+			Engine (
+				UiD ( 7 )
+				EngineData ( 2000RearEng Series2000 )
+			)
+		)
+	)
+	Direction ( 0 )
+	ID ( 32768 )
+	Tile ( -144 14061 276.697 866.383 )
+)
+""",
+"""
+SIMISA@@@@@@@@@@JINX0t1t______
+
+ActivityObject (
+	ObjectType ( WagonsList )
+	Train_Config (
+		TrainCfg ( ""
+			Name ( "Loose consist." )
+			Serial ( 16 )
+			MaxVelocity ( 33.33130 1.00000 )
+			NextWagonUID ( 8 )
+			Durability ( 1.00000 )
+			Engine (
+				UiD ( 0 )
+				EngineData ( 2000 Series2000 )
+			)
+			Wagon (
+				WagonData ( 2000ACarriage Series2000 )
+				UiD ( 1 )
+			)
+			Wagon (
+				WagonData ( 2000ACarriage Series2000 )
+				UiD ( 2 )
+			)
+			Wagon (
+				WagonData ( 2000BCarriage Series2000 )
+				UiD ( 3 )
+			)
+			Wagon (
+				WagonData ( 2000BCarriage Series2000 )
+				UiD ( 4 )
+			)
+			Wagon (
+				WagonData ( 2000ACarriage Series2000 )
+				UiD ( 5 )
+			)
+			Wagon (
+				WagonData ( 2000BCarriage Series2000 )
+				UiD ( 6 )
+			)
+			Engine (
+				UiD ( 7 )
+				EngineData ( 2000RearEng Series2000 )
+			)
+		)
+	)
+	Direction ( 0 )
+	ID ( 32768 )
+	Tile ( -144 14061 276.697 866.383 )
+)
+
+""",
+            new WriterOptions{ ValuesInColumns = new Dictionary<string, int> { { "Friction", 5 } }}
         };
     }
 

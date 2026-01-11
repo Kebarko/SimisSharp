@@ -3,11 +3,11 @@
 namespace KE.MSTS.SimisSharp;
 
 [DebuggerDisplay("Value='{Value}' Parent='{Parent?.Value}' Subnodes='{subnodes.Count}'")]
-public class SimisNode(string value)
+public class SimisNode(string? value = null)
 {
     private readonly IList<SimisNode> subnodes = [];
 
-    public string Value { get; } = value;
+    public string? Value { get; } = value;
 
     public SimisNode? Parent { get; private set; }
 
@@ -15,7 +15,7 @@ public class SimisNode(string value)
 
     public bool IsLeaf => subnodes.Count == 0;
 
-    public bool IsEmptyLeaf => IsLeaf && string.IsNullOrEmpty(Value);
+    public bool IsDummy => IsLeaf && Value == null;
 
     public bool IsComment => string.Equals("comment", Value, StringComparison.OrdinalIgnoreCase) || string.Equals("skip", Value, StringComparison.OrdinalIgnoreCase);
 
@@ -83,6 +83,13 @@ public class SimisNode(string value)
 
         public bool IsQuoted { get; set; }
 
-        public string GetQuotedValue(string value, bool preserveQoutes) => preserveQoutes && IsQuoted || value.Contains(' ') ? $"\"{value}\"" : value;
+        public string GetQuotedValue(string? value, bool preserveQoutes)
+        {
+            if (value is null)
+            {
+                return string.Empty;
+            }
+            return (preserveQoutes && IsQuoted) || value.Contains(' ') ? $"\"{value}\"" : value;
+        }
     }
 }
