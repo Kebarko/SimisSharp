@@ -19,6 +19,28 @@ public class SimisNode(string? value = null)
 
     public bool IsComment => string.Equals("comment", Value, StringComparison.OrdinalIgnoreCase) || string.Equals("skip", Value, StringComparison.OrdinalIgnoreCase);
 
+    public bool IsMatchForPath(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+            return false;
+
+        var segments = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        SimisNode? currentNode = this;
+
+        for (int i = segments.Length - 1; i >= 0; i--)
+        {
+            if (currentNode == null)
+                return false;
+
+            if (!string.Equals(currentNode.Value, segments[i], StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            currentNode = currentNode.Parent;
+        }
+
+        return true;
+    }
+
     public IList<SimisNode> GetNodes()
     {
         return subnodes.ToList();

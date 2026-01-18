@@ -43,7 +43,7 @@ internal class Writer : IWriter
 
         sb.Append(node.Formatting.GetQuotedValue(node.Value, options.PreserveQuotes));
 
-        if (!inline && node.Value != null && options.Inline.Contains(node.Value, StringComparer.OrdinalIgnoreCase))
+        if (!inline && options.Inline.Any(node.IsMatchForPath))
         {
             inline = true;
         }
@@ -52,7 +52,7 @@ internal class Writer : IWriter
         {
             bool closeAtNextLine = false;
             bool insideComment = false;
-            TableConfig? tableConfig = options.Table.SingleOrDefault(t => t.Name.Equals(node.Value!, StringComparison.OrdinalIgnoreCase));
+            TableConfig? tableConfig = options.Table.SingleOrDefault(t => node.IsMatchForPath(t.Name));
             int currentColumn = 1;
 
             sb.Append(' ');
