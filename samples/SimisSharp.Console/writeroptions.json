@@ -22,6 +22,11 @@
       "Name": "EngineOperatingProcedures",
       "Columns": 2,
       "ColumnSeparator": ""
+    },
+    {
+      "Name": "Table",
+      "FirstColumnPattern": "km/h",
+      "ColumnSeparator": "\t"
     }
   ]
 }
