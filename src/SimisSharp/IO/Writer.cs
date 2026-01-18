@@ -52,7 +52,7 @@ internal class Writer : IWriter
         {
             bool closeAtNextLine = false;
             bool insideComment = false;
-            TableAlign? tableAlign = options.Table.SingleOrDefault(t => t.Name.Equals(node.Value!, StringComparison.OrdinalIgnoreCase));
+            TableConfig? tableConfig = options.Table.SingleOrDefault(t => t.Name.Equals(node.Value!, StringComparison.OrdinalIgnoreCase));
             int currentColumn = 1;
 
             sb.Append(' ');
@@ -68,7 +68,7 @@ internal class Writer : IWriter
                     }
                     else
                     {
-                        if (tableAlign != null && !inline)
+                        if (tableConfig != null && !inline)
                         {
                             if (currentColumn == 1)
                             {
@@ -78,13 +78,13 @@ internal class Writer : IWriter
                             }
                             else
                             {
-                                sb.Append(tableAlign.ColumnSeparator);
+                                sb.Append(tableConfig.ColumnSeparator);
                             }
 
                             sb.Append(subnode.Formatting.GetQuotedValue(subnode.Value, options.PreserveQuotes));
 
                             currentColumn++;
-                            if (currentColumn > tableAlign.Columns)
+                            if (currentColumn > tableConfig.Columns)
                             {
                                 currentColumn = 1;
                             }

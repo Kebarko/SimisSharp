@@ -16,9 +16,9 @@ public class WriterOptions
 
     public List<string> Inline { get; set; } = [];
 
-    public List<TableAlign> Table { get; set; } = [];
+    public List<TableConfig> Table { get; set; } = [];
 
-    public class TableAlign
+    public class TableConfig
     {
         public required string Name { get; set; }
 

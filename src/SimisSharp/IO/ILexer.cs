@@ -2,7 +2,7 @@
 
 public interface ILexer
 {
-    ICollection<string> Unprocessed { get; }
+    ISet<string> UnprocessedTokens { get; }
 
     IList<string> Lex(string text);
 }

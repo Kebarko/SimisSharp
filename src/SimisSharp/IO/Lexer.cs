@@ -9,7 +9,7 @@ internal class Lexer : ILexer
         Unprocessed
     }
 
-    public ICollection<string> Unprocessed => ["comment", "skip"];
+    public ISet<string> UnprocessedTokens => new HashSet<string> { "comment", "skip" };
 
     public IList<string> Lex(string text)
     {
@@ -140,7 +140,7 @@ internal class Lexer : ILexer
             string token = span.Slice(start, end - start + 1).ToString();
             tokens.Add(token);
 
-            if (Unprocessed.Any(np => string.Equals(np, token, StringComparison.OrdinalIgnoreCase)))
+            if (UnprocessedTokens.Any(np => string.Equals(np, token, StringComparison.OrdinalIgnoreCase)))
             {
                 state = LexerState.Unprocessed;
             }
