@@ -14,7 +14,16 @@ public class WriterOptions
 
     public bool CollapseEmptyLines { get; set; } = true;
 
-    public List<string> Inline { get; set; } = new();
+    public List<string> Inline { get; set; } = [];
 
-    public Dictionary<string, int> ValuesInColumns { get; set; } = new();
+    public List<TableAlign> Table { get; set; } = [];
+
+    public class TableAlign
+    {
+        public required string Name { get; set; }
+
+        public int Columns { get; set; } = 0;
+
+        public string ColumnSeparator { get; set; } = " ";
+    }
 }

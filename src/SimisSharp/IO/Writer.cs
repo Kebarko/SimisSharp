@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using static KE.MSTS.SimisSharp.IO.WriterOptions;
 
 namespace KE.MSTS.SimisSharp.IO;
 
@@ -51,7 +52,7 @@ internal class Writer : IWriter
         {
             bool closeAtNextLine = false;
             bool insideComment = false;
-            bool valuesInColumns = options.ValuesInColumns.TryGetValue(node.Value!, out int totalColumns);
+            TableAlign? tableAlign = options.Table.SingleOrDefault(t => t.Name.Equals(node.Value!, StringComparison.OrdinalIgnoreCase));
             int currentColumn = 1;
 
             sb.Append(' ');
@@ -67,7 +68,7 @@ internal class Writer : IWriter
                     }
                     else
                     {
-                        if (valuesInColumns && !inline)
+                        if (tableAlign != null && !inline)
                         {
                             if (currentColumn == 1)
                             {
@@ -77,13 +78,13 @@ internal class Writer : IWriter
                             }
                             else
                             {
-                                sb.Append(' ');
+                                sb.Append(tableAlign.ColumnSeparator);
                             }
 
                             sb.Append(subnode.Formatting.GetQuotedValue(subnode.Value, options.PreserveQuotes));
 
                             currentColumn++;
-                            if (currentColumn > totalColumns)
+                            if (currentColumn > tableAlign.Columns)
                             {
                                 currentColumn = 1;
                             }
