@@ -24,8 +24,6 @@ public class WriterOptions
 
         public int Columns { get; set; } = 0;
 
-        public string FirstColumnPattern { get; set; } = string.Empty;
-
         public string ColumnSeparator { get; set; } = " ";
     }
 }

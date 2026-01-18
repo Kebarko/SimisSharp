@@ -70,11 +70,6 @@ internal class Writer : IWriter
                     {
                         if (tableConfig != null && !inline)
                         {
-                            if (!string.IsNullOrEmpty(tableConfig.FirstColumnPattern) && subnode.Value != null && subnode.Value.Contains(tableConfig.FirstColumnPattern, StringComparison.OrdinalIgnoreCase))
-                            {
-                                currentColumn = 1;
-                            }
-
                             if (currentColumn == 1)
                             {
                                 sb.AppendLine();
@@ -89,8 +84,7 @@ internal class Writer : IWriter
                             sb.Append(subnode.Formatting.GetQuotedValue(subnode.Value, options.PreserveQuotes));
 
                             currentColumn++;
-
-                            if (tableConfig.Columns > 0 && currentColumn > tableConfig.Columns)
+                            if (currentColumn > tableConfig.Columns)
                             {
                                 currentColumn = 1;
                             }
