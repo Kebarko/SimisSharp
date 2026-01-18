@@ -612,8 +612,226 @@ ActivityObject (
 	Tile ( -144 14061 276.697 866.383 )
 )
 
+"""
+        };
+
+        yield return new object[]
+        {
+"""
+SIMISA@@@@@@@@@@JINX0D0t______
+
+Wagon ( US2BNSFCar  
+	comment(Gondola Car)
+	Type ( Freight )
+	WagonShape ( US2BNSFCar.s )
+	Size ( 3.1m 3.77019m 22m)
+	comment( 28.03t empty, 160.747t full )
+	Mass ( "28.03t" )
+	WheelRadius ( 36in/2 )
+	InertiaTensor ( Box (3.1m 2.7m 22m) )
+	Coupling (
+		Type ( Automatic )
+		Spring (
+			Stiffness ( 1e6N/m 5e6N/m )
+			Damping ( 1e6N/m 1e6N/m )
+			Break ( 1.1e7N 1.1e7N )
+			r0 ( 20cm 30cm )
+		)
+		Velocity ( 0.1m/s )
+	)
+	Buffers (
+		Spring (
+			Stiffness ( 1e6N/m 5e6N/m )
+			Damping ( 1e6N/m/s 1e6N/m/s )
+			r0 ( 0m 1e9 )
+		)
+		Centre ( 0.5 )
+		Radius ( 1 )
+		Angle ( 0.5deg )
+	)
+
+	Adheasion ( 0.2 0.4 2 0 )
+	DerailRailHeight ( 4cm )
+	DerailRailForce ( 2.5*28t )
+	DerailBufferForce ( 400kN )
+	NumWheels (	8 )
+	Friction (
+		100N/m/s		1		-1mph		0		1
+		5.1N/rad/s		1		-1rad/s		0		1
+	)
+
+	Lights	(	2
+		Light	(
+			comment( Rear red light )
+			Type		( 0 )
+			Conditions	(
+				Headlight ( 3 )
+				Unit ( 3 )
+				)
+			FadeIn	( 0.5 )
+			FadeOut	( 0.5 )
+			Cycle	( 0 )
+			States	(	2
+				State	(
+					Duration ( 0.35 )
+					LightColour ( 80ff0000 )
+					Position ( 0.0 3.26 -10.542 )
+					Azimuth ( -180 -180 -180 )
+					Transition ( 0 )
+					Radius ( 1.0 )
+				)
+				State	(
+					Duration ( 0.35 )
+					LightColour ( 00000000 )
+					Position ( 0.0 3.26 -10.542 )
+					Azimuth ( -180 -180 -180 )
+					Transition ( 0 )
+					Radius ( 1.0 )
+					)
+				)
+			)
+		Light	(
+			comment( Rear red light dim )
+			Type		( 0 )
+			Conditions	(
+				Headlight ( 2 )
+				Unit ( 3 )
+				)
+			FadeIn	( 0.5 )
+			FadeOut	( 0.5 )
+			Cycle	( 0 )
+			States	(	2
+				State	(
+					Duration ( 0.35 )
+					LightColour ( 40ff0000 )
+					Position ( 0.0 3.26 -10.542 )
+					Azimuth ( -180 -180 -180 )
+					Transition ( 0 )
+					Radius ( 1.0 )
+				)
+				State	(
+					Duration ( 0.35 )
+					LightColour ( 00000000 )
+					Position ( 0.0 3.26 -10.542 )
+					Azimuth ( -180 -180 -180 )
+					Transition ( 0 )
+					Radius ( 1.0 )
+		   		)
+			)
+		)
+	)
+
+	BrakeEquipmentType( "Handbrake, Triple_valve, Auxilary_reservoir, Emergency_brake_reservoir" )
+	BrakeSystemType( "Air_single_pipe" )
+	MaxBrakeForce( 50kN )
+
+	MaxHandbrakeForce( 35kN )
+	NumberOfHandbrakeLeverSteps( 100 )
+
+	TripleValveRatio( 2.5 )
+	MaxReleaseRate( 15 )
+	MaxApplicationRate( 25 )
+	MaxAuxilaryChargingRate( 5 )
+	EmergencyResCapacity( 6 )
+	EmergencyResChargingRate( 5 )
+	BrakeCylinderPressureForMaxBrakeBrakeForce( 70 )
+	EmergencyBrakeResMaxPressure( 90 )
+
+  	Sound (	"GenFreightWag1.sms" )
+)
+
 """,
-            new WriterOptions{ ValuesInColumns = new Dictionary<string, int> { { "Friction", 5 } }}
+"""
+SIMISA@@@@@@@@@@JINX0D0t______
+
+Wagon ( US2BNSFCar
+	comment (Gondola Car)
+	Type ( Freight )
+	WagonShape ( US2BNSFCar.s )
+	Size ( 3.1m 3.77019m 22m )
+	comment ( 28.03t empty, 160.747t full )
+	Mass ( "28.03t" )
+	WheelRadius ( 36in/2 )
+	InertiaTensor ( Box ( 3.1m 2.7m 22m ) )
+	Coupling (
+		Type ( Automatic )
+		Spring (
+			Stiffness ( 1e6N/m 5e6N/m )
+			Damping ( 1e6N/m 1e6N/m )
+			Break ( 1.1e7N 1.1e7N )
+			r0 ( 20cm 30cm )
+		)
+		Velocity ( 0.1m/s )
+	)
+	Buffers (
+		Spring (
+			Stiffness ( 1e6N/m 5e6N/m )
+			Damping ( 1e6N/m/s 1e6N/m/s )
+			r0 ( 0m 1e9 )
+		)
+		Centre ( 0.5 )
+		Radius ( 1 )
+		Angle ( 0.5deg )
+	)
+
+	Adheasion ( 0.2 0.4 2 0 )
+	DerailRailHeight ( 4cm )
+	DerailRailForce ( 2.5*28t )
+	DerailBufferForce ( 400kN )
+	NumWheels ( 8 )
+	Friction (
+		100N/m/s 1 -1mph 0 1
+		5.1N/rad/s 1 -1rad/s 0 1
+	)
+
+	Lights ( 2
+		Light (
+			comment ( Rear red light )
+			Type ( 0 )
+			Conditions ( Headlight ( 3 ) Unit ( 3 ) )
+			FadeIn ( 0.5 )
+			FadeOut ( 0.5 )
+			Cycle ( 0 )
+			States ( 2
+				State ( Duration ( 0.35 ) LightColour ( 80ff0000 ) Position ( 0.0 3.26 -10.542 ) Azimuth ( -180 -180 -180 ) Transition ( 0 ) Radius ( 1.0 ) )
+				State ( Duration ( 0.35 ) LightColour ( 00000000 ) Position ( 0.0 3.26 -10.542 ) Azimuth ( -180 -180 -180 ) Transition ( 0 ) Radius ( 1.0 ) )
+			)
+		)
+		Light (
+			comment ( Rear red light dim )
+			Type ( 0 )
+			Conditions ( Headlight ( 2 ) Unit ( 3 ) )
+			FadeIn ( 0.5 )
+			FadeOut ( 0.5 )
+			Cycle ( 0 )
+			States ( 2
+				State ( Duration ( 0.35 ) LightColour ( 40ff0000 ) Position ( 0.0 3.26 -10.542 ) Azimuth ( -180 -180 -180 ) Transition ( 0 ) Radius ( 1.0 ) )
+				State ( Duration ( 0.35 ) LightColour ( 00000000 ) Position ( 0.0 3.26 -10.542 ) Azimuth ( -180 -180 -180 ) Transition ( 0 ) Radius ( 1.0 ) )
+			)
+		)
+	)
+
+	BrakeEquipmentType ( "Handbrake, Triple_valve, Auxilary_reservoir, Emergency_brake_reservoir" )
+	BrakeSystemType ( "Air_single_pipe" )
+	MaxBrakeForce ( 50kN )
+
+	MaxHandbrakeForce ( 35kN )
+	NumberOfHandbrakeLeverSteps ( 100 )
+
+	TripleValveRatio ( 2.5 )
+	MaxReleaseRate ( 15 )
+	MaxApplicationRate ( 25 )
+	MaxAuxilaryChargingRate ( 5 )
+	EmergencyResCapacity ( 6 )
+	EmergencyResChargingRate ( 5 )
+	BrakeCylinderPressureForMaxBrakeBrakeForce ( 70 )
+	EmergencyBrakeResMaxPressure ( 90 )
+
+	Sound ( "GenFreightWag1.sms" )
+)
+
+""",
+            new WriterOptions{ Inline = ["InertiaTensor", "Conditions", "State"], ValuesInColumns = new Dictionary<string, int> { { "Friction", 5 } }}
         };
     }
 

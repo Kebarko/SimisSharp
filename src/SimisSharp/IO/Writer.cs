@@ -4,39 +4,48 @@ namespace KE.MSTS.SimisSharp.IO;
 
 internal class Writer : IWriter
 {
-    private const char space = ' ';
     public string Write(SimisDocument document, WriterOptions? options = null)
     {
         options ??= new();
 
         StringBuilder sb = new();
 
-        foreach(SimisNode node in document.Root.GetNodes(n => !n.IsDummy && (!n.IsComment || options.PreserveComments)))
-        {
-            WriteNode(sb, node, options);
-        }
-
+        WriteRootNode(sb, document.Root, options);
+        
         if (sb.Length > 0 && !EndsWithNewLine(sb))
-        {
             sb.AppendLine();
-        }
 
         return sb.ToString();
     }
 
-    private static void WriteNode(StringBuilder sb, SimisNode node, WriterOptions options, int indentLevel = 0)
+    private static void WriteRootNode(StringBuilder sb, SimisNode node, WriterOptions options)
     {
-        string indent = new(options.IndentCharacter, indentLevel * options.IndentSize);
-
-        if (sb.Length > 0 && indentLevel == 0)
+        foreach (SimisNode subnode in node.GetNodes(n => !n.IsDummy && (!n.IsComment || options.PreserveComments)))
         {
-            sb.AppendLine();
+            WriteNode(sb, subnode, options, 0, false);
         }
+    }
+
+    private static void WriteNode(StringBuilder sb, SimisNode node, WriterOptions options, int level, bool inline)
+    {
+        string indent = new(options.IndentCharacter, level * options.IndentSize);
+
+        if (sb.Length > 0 && level == 0)
+            sb.AppendLine();
 
         WriteEmptyLines(sb, options.PreserveEmptyLines, node.Formatting.LeadingEmptyLines, options.CollapseEmptyLines);
 
-        sb.Append(indent);
+        if (inline)
+            sb.Append(' ');
+        else
+            sb.Append(indent);
+
         sb.Append(node.Formatting.GetQuotedValue(node.Value, options.PreserveQuotes));
+
+        if (!inline && node.Value != null && options.Inline.Contains(node.Value, StringComparer.OrdinalIgnoreCase))
+        {
+            inline = true;
+        }
 
         if (!node.IsLeaf)
         {
@@ -45,7 +54,7 @@ internal class Writer : IWriter
             bool valuesInColumns = options.ValuesInColumns.TryGetValue(node.Value!, out int totalColumns);
             int currentColumn = 1;
 
-            sb.Append(space);
+            sb.Append(' ');
             sb.Append('(');
             foreach (SimisNode subnode in node.GetNodes(n => !n.IsDummy && (!n.IsComment || options.PreserveComments)))
             {
@@ -58,7 +67,7 @@ internal class Writer : IWriter
                     }
                     else
                     {
-                        if (valuesInColumns)
+                        if (valuesInColumns && !inline)
                         {
                             if (currentColumn == 1)
                             {
@@ -68,7 +77,7 @@ internal class Writer : IWriter
                             }
                             else
                             {
-                                sb.Append(space);
+                                sb.Append(' ');
                             }
 
                             sb.Append(subnode.Formatting.GetQuotedValue(subnode.Value, options.PreserveQuotes));
@@ -83,16 +92,20 @@ internal class Writer : IWriter
                         }
                         else
                         {
-                            sb.Append(space);
+                            sb.Append(' ');
                             sb.Append(subnode.Formatting.GetQuotedValue(subnode.Value, options.PreserveQuotes));
                         }
                     }
                 }
                 else
                 {
-                    closeAtNextLine = true;
-                    sb.AppendLine();
-                    WriteNode(sb, subnode, options, indentLevel + 1);
+                    if (!inline)
+                    {
+                        closeAtNextLine = true;
+                        sb.AppendLine(); 
+                    }
+
+                    WriteNode(sb, subnode, options, level + 1, inline);
                 }
             }
 
@@ -103,12 +116,12 @@ internal class Writer : IWriter
             }
             else if (!insideComment)
             {
-                sb.Append(space);
+                sb.Append(' ');
             }
             sb.Append(')');
-
-            WriteEmptyLines(sb, options.PreserveEmptyLines, node.Formatting.TrailingEmptyLines, options.CollapseEmptyLines);
         }
+
+        WriteEmptyLines(sb, options.PreserveEmptyLines, node.Formatting.TrailingEmptyLines, options.CollapseEmptyLines);
     }
 
     private static void WriteEmptyLines(StringBuilder sb, bool preserveEmptyLines, int count, bool collapseEmptyLines)

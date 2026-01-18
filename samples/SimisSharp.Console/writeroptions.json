@@ -5,6 +5,7 @@
   "PreserveComments": true,
   "PreserveEmptyLines": true,
   "CollapseEmptyLines": true,
+  "Inline": ["InertiaTensor"],
   "ValuesInColumns": {
     "Friction": 5,
     "Description": 2,
