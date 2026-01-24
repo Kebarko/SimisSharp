@@ -21,7 +21,7 @@ internal class Writer : IWriter
 
     private static void WriteRootNode(StringBuilder sb, SimisNode node, WriterOptions options)
     {
-        foreach (SimisNode subnode in node.GetNodes(n => !n.IsDummy && (!n.IsComment || options.PreserveComments)))
+        foreach (SimisNode subnode in node.GetNodes(n => !n.IsDummyLeaf && (!n.IsComment || options.PreserveComments)))
         {
             WriteNode(sb, subnode, options, 0, false);
         }
@@ -57,7 +57,7 @@ internal class Writer : IWriter
 
             sb.Append(' ');
             sb.Append('(');
-            foreach (SimisNode subnode in node.GetNodes(n => !n.IsDummy && (!n.IsComment || options.PreserveComments)))
+            foreach (SimisNode subnode in node.GetNodes(n => !n.IsDummyLeaf && (!n.IsComment || options.PreserveComments)))
             {
                 if (subnode.IsLeaf)
                 {

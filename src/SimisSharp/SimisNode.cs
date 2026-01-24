@@ -15,7 +15,9 @@ public class SimisNode(string? value = null)
 
     public bool IsLeaf => subnodes.Count == 0;
 
-    public bool IsDummy => IsLeaf && Value == null;
+    public bool IsDummyLeaf => IsLeaf && Value == null;
+
+    public bool IsDummyRoot => Parent == null && Value == null;
 
     public bool IsComment => string.Equals("comment", Value, StringComparison.OrdinalIgnoreCase) || string.Equals("skip", Value, StringComparison.OrdinalIgnoreCase);
 

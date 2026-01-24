@@ -2,5 +2,5 @@
 
 public class SimisDocument
 {
-    public SimisNode Root { get; } = new("ROOT");
+    public SimisNode Root { get; } = new();
 }
