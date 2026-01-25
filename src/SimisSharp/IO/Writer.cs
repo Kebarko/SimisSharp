@@ -53,6 +53,7 @@ internal class Writer : IWriter
             bool closeAtNextLine = false;
             bool insideComment = false;
             TableConfig? tableConfig = options.Table.SingleOrDefault(t => node.IsMatchForPath(t.Name));
+            int totalColumns = GetColumns(tableConfig, node);
             int currentColumn = 1;
 
             sb.Append(' ');
@@ -68,7 +69,7 @@ internal class Writer : IWriter
                     }
                     else
                     {
-                        if (tableConfig != null && !inline)
+                        if (tableConfig != null && totalColumns > 0 && !inline)
                         {
                             if (currentColumn == 1)
                             {
@@ -84,7 +85,7 @@ internal class Writer : IWriter
                             sb.Append(subnode.Formatting.GetQuotedValue(subnode.Value, options.PreserveQuotes));
 
                             currentColumn++;
-                            if (currentColumn > tableConfig.Columns)
+                            if (currentColumn > totalColumns)
                             {
                                 currentColumn = 1;
                             }
@@ -123,6 +124,24 @@ internal class Writer : IWriter
         }
 
         WriteEmptyLines(sb, options.PreserveEmptyLines, node.Formatting.TrailingEmptyLines, options.CollapseEmptyLines);
+    }
+
+    private static int GetColumns(TableConfig? tableConfig, SimisNode node)
+    {
+        int columns = 0;
+        if (tableConfig != null)
+        {
+            if (!int.TryParse(tableConfig.Columns, out columns))
+            {
+                IReadOnlyList<SimisNode> sourceNodes = node.FindNodesByPath(tableConfig.Columns);
+                if (sourceNodes.Count > 0)
+                {
+                    _ = int.TryParse(sourceNodes[0].Value, out columns);
+                }
+            }
+        }
+
+        return columns;
     }
 
     private static void WriteEmptyLines(StringBuilder sb, bool preserveEmptyLines, int count, bool collapseEmptyLines)

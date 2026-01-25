@@ -10,18 +10,23 @@
   [
     {
       "Name": "Friction",
-      "Columns": 5,
+      "Columns": "5",
       "ColumnSeparator": "\t"
     },
     {
       "Name": "Description",
-      "Columns": 2,
+      "Columns": "2",
       "ColumnSeparator": ""
     },
     {
       "Name": "EngineOperatingProcedures",
-      "Columns": 2,
+      "Columns": "2",
       "ColumnSeparator": ""
+    },
+    {
+      "Name": "Table",
+      "Columns": "../[2]",
+      "ColumnSeparator": " "
     }
   ]
 }

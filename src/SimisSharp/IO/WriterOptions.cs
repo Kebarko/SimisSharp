@@ -22,7 +22,7 @@ public class WriterOptions
     {
         public required string Name { get; set; }
 
-        public int Columns { get; set; } = 0;
+        public string Columns { get; set; } = "0";
 
         public string ColumnSeparator { get; set; } = " ";
     }

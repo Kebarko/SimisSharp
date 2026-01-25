@@ -7,7 +7,6 @@ internal class SimisDocumentTestData : IEnumerable<object[]>
 {
     public IEnumerator<object[]> GetEnumerator()
     {
-
         yield return new object[]
         {
             string.Empty,
@@ -377,7 +376,7 @@ Friction (
 AntiSlip ( )
 
 """,
-            new WriterOptions{ Table = { new WriterOptions.TableConfig { Name="Friction", Columns = 5, ColumnSeparator = "\t" } } }
+            new WriterOptions{ Table = { new WriterOptions.TableConfig { Name="Friction", Columns = "5", ColumnSeparator = "\t" } } }
         };
 
         yield return new object[]
@@ -505,7 +504,7 @@ EngineOperatingProcedures (
 )
 
 """,
-            new WriterOptions{ IndentSize = 4, IndentCharacter = ' ',  Table = { new WriterOptions.TableConfig { Name= "EngineOperatingProcedures", Columns = 2, ColumnSeparator = string.Empty } } }
+            new WriterOptions{ IndentSize = 4, IndentCharacter = ' ',  Table = { new WriterOptions.TableConfig { Name= "EngineOperatingProcedures", Columns = "2", ColumnSeparator = string.Empty } } }
         };
 
         yield return new object[]
@@ -831,7 +830,7 @@ Wagon ( US2BNSFCar
 )
 
 """,
-            new WriterOptions{ Inline = ["InertiaTensor", "Conditions", "State"], Table = { new WriterOptions.TableConfig { Name="Friction", Columns = 5, ColumnSeparator = "\t" } } }
+            new WriterOptions{ Inline = ["InertiaTensor", "Conditions", "State"], Table = { new WriterOptions.TableConfig { Name="Friction", Columns = "5", ColumnSeparator = "\t" } } }
         };
     }
 
