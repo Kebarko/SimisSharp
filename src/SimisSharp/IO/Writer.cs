@@ -50,15 +50,26 @@ internal class Writer : IWriter
 
         if (!node.IsLeaf)
         {
+            IReadOnlyList<SimisNode> subnodes = node.GetNodes(n => !n.IsDummyLeaf && (!n.IsComment || options.PreserveComments));
+
             bool closeAtNextLine = false;
             bool insideComment = false;
             TableConfig? tableConfig = options.Table.SingleOrDefault(t => node.IsMatchForPath(t.Name));
-            int totalColumns = GetColumns(tableConfig, node);
-            int currentColumn = 1;
+            int totalColumns = 0;
+            int currentColumn = 0;
+            int[] columnWidths = [];
+            if (tableConfig != null)
+            {
+                totalColumns = GetColumns(tableConfig, node);
+                if (tableConfig.FixedWidth)
+                {
+                    columnWidths = GetColumnWidths(subnodes, totalColumns, options);
+                }
+            }
 
             sb.Append(' ');
             sb.Append('(');
-            foreach (SimisNode subnode in node.GetNodes(n => !n.IsDummyLeaf && (!n.IsComment || options.PreserveComments)))
+            foreach (SimisNode subnode in subnodes)
             {
                 if (subnode.IsLeaf)
                 {
@@ -71,7 +82,7 @@ internal class Writer : IWriter
                     {
                         if (tableConfig != null && totalColumns > 0 && !inline)
                         {
-                            if (currentColumn == 1)
+                            if (currentColumn == 0)
                             {
                                 sb.AppendLine();
                                 sb.Append(indent);
@@ -82,12 +93,18 @@ internal class Writer : IWriter
                                 sb.Append(tableConfig.ColumnSeparator);
                             }
 
-                            sb.Append(subnode.Formatting.GetQuotedValue(subnode.Value, options.PreserveQuotes));
+                            string value = subnode.Formatting.GetQuotedValue(subnode.Value, options.PreserveQuotes);
+                            if (columnWidths.Length > currentColumn && value.Length < columnWidths[currentColumn])
+                            {
+                                value = value.PadLeft(columnWidths[currentColumn]);
+                            }
+
+                            sb.Append(value);
 
                             currentColumn++;
-                            if (currentColumn > totalColumns)
+                            if (currentColumn >= totalColumns)
                             {
-                                currentColumn = 1;
+                                currentColumn = 0;
                             }
 
                             closeAtNextLine = true;
@@ -126,22 +143,38 @@ internal class Writer : IWriter
         WriteEmptyLines(sb, options.PreserveEmptyLines, node.Formatting.TrailingEmptyLines, options.CollapseEmptyLines);
     }
 
-    private static int GetColumns(TableConfig? tableConfig, SimisNode node)
+    private static int GetColumns(TableConfig tableConfig, SimisNode node)
     {
         int columns = 0;
-        if (tableConfig != null)
+        if (!int.TryParse(tableConfig.Columns, out columns))
         {
-            if (!int.TryParse(tableConfig.Columns, out columns))
+            IReadOnlyList<SimisNode> sourceNodes = node.FindNodesByPath(tableConfig.Columns);
+            if (sourceNodes.Count > 0)
             {
-                IReadOnlyList<SimisNode> sourceNodes = node.FindNodesByPath(tableConfig.Columns);
-                if (sourceNodes.Count > 0)
-                {
-                    _ = int.TryParse(sourceNodes[0].Value, out columns);
-                }
+                _ = int.TryParse(sourceNodes[0].Value, out columns);
             }
         }
 
         return columns;
+    }
+
+    private static int[] GetColumnWidths(IReadOnlyList<SimisNode> nodes, int totalColumns, WriterOptions options)
+    {
+        var result = new int[totalColumns];
+
+        for (int colIdx = 0; colIdx < totalColumns; colIdx++)
+        {
+            for (int nodeIdx = colIdx; nodeIdx < nodes.Count; nodeIdx += totalColumns)
+            {
+                SimisNode node = nodes[nodeIdx];
+                string value = node.Formatting.GetQuotedValue(node.Value, options.PreserveQuotes);
+
+                if (value.Length > result[colIdx])
+                    result[colIdx] = value.Length;
+            }
+        }
+
+        return result;
     }
 
     private static void WriteEmptyLines(StringBuilder sb, bool preserveEmptyLines, int count, bool collapseEmptyLines)

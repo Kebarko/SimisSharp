@@ -25,5 +25,7 @@ public class WriterOptions
         public string Columns { get; set; } = "0";
 
         public string ColumnSeparator { get; set; } = " ";
+
+        public bool FixedWidth { get; set; } = false;
     }
 }
