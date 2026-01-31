@@ -66,14 +66,14 @@ internal class Lexer : ILexer
                     else if (c == '(')
                     {
                         Emit(span, tokens, ref tokenStart, i - 1, ref state);
-                        tokens.Add(c.ToString());
+                        if (state == LexerState.Unprocessed)
+                            i--;
+                        else
+                            tokens.Add(c.ToString());
+
                         carriageReturns = 0;
                         lineFeeds = 0;
 
-                        if (state == LexerState.Unprocessed)
-                        {
-                            i--;
-                        }
                     }
                     else if (c == ')')
                     {
