@@ -5,7 +5,9 @@
         public static readonly ISet<string> CommentTokens = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             "comment",
-            "skip"
+            "skip",
+            "_skip",
+            "_info",
         };
     }
 }
