@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using KE.MSTS.SimisSharp.IO;
+using System.Diagnostics;
 
 namespace KE.MSTS.SimisSharp;
 
@@ -19,7 +20,7 @@ public class SimisNode(string? value = null)
 
     public bool IsDummyRoot => Parent == null && Value == null;
 
-    public bool IsComment => string.Equals("comment", Value, StringComparison.OrdinalIgnoreCase) || string.Equals("skip", Value, StringComparison.OrdinalIgnoreCase);
+    public bool IsComment => Value != null && TokenConfiguration.CommentTokens.Contains(Value);
 
     public SimisNode GetRoot()
     {
