@@ -71,7 +71,6 @@ internal class Lexer : ILexer
 
                         carriageReturns = 0;
                         lineFeeds = 0;
-
                     }
                     else if (c == ')')
                     {
@@ -131,7 +130,7 @@ internal class Lexer : ILexer
         return tokens;
     }
 
-    private void Emit(ReadOnlySpan<char> span, List<string> tokens, ref int start, int end, ref LexerState state)
+    private static void Emit(ReadOnlySpan<char> span, List<string> tokens, ref int start, int end, ref LexerState state)
     {
         if (start >= 0 && end < span.Length && end >= start)
         {

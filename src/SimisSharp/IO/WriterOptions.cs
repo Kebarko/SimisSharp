@@ -22,9 +22,11 @@ public class WriterOptions
     {
         public required string Name { get; set; }
 
-        public string Columns { get; set; } = "0";
+        public required string Columns { get; set; }
 
         public string ColumnSeparator { get; set; } = " ";
+
+        public int Offset { get; set; } = 0;
 
         public bool FixedWidth { get; set; } = false;
     }

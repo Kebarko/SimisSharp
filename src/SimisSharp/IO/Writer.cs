@@ -63,14 +63,16 @@ internal class Writer : IWriter
                 totalColumns = GetColumns(tableConfig, node);
                 if (tableConfig.FixedWidth)
                 {
-                    columnWidths = GetColumnWidths(subnodes, totalColumns, options);
+                    columnWidths = GetColumnWidths(subnodes, totalColumns, tableConfig.Offset, options.PreserveQuotes);
                 }
             }
 
             sb.Append(' ');
             sb.Append('(');
-            foreach (SimisNode subnode in subnodes)
+            for (int i = 0; i < subnodes.Count; i++)
             {
+                SimisNode subnode = subnodes[i];
+
                 if (subnode.IsLeaf)
                 {
                     insideComment = subnode.Parent?.IsComment == true;
@@ -80,7 +82,7 @@ internal class Writer : IWriter
                     }
                     else
                     {
-                        if (tableConfig != null && totalColumns > 0 && !inline)
+                        if (tableConfig != null && totalColumns > 0 && i >= tableConfig.Offset)
                         {
                             if (currentColumn == 0)
                             {
@@ -158,16 +160,16 @@ internal class Writer : IWriter
         return columns;
     }
 
-    private static int[] GetColumnWidths(IReadOnlyList<SimisNode> nodes, int totalColumns, WriterOptions options)
+    private static int[] GetColumnWidths(IReadOnlyList<SimisNode> nodes, int totalColumns, int offset, bool preserveQuotes)
     {
         var result = new int[totalColumns];
 
         for (int colIdx = 0; colIdx < totalColumns; colIdx++)
         {
-            for (int nodeIdx = colIdx; nodeIdx < nodes.Count; nodeIdx += totalColumns)
+            for (int nodeIdx = colIdx + offset; nodeIdx < nodes.Count; nodeIdx += totalColumns)
             {
                 SimisNode node = nodes[nodeIdx];
-                string value = node.Formatting.GetQuotedValue(node.Value, options.PreserveQuotes);
+                string value = node.Formatting.GetQuotedValue(node.Value, preserveQuotes);
 
                 if (value.Length > result[colIdx])
                     result[colIdx] = value.Length;
