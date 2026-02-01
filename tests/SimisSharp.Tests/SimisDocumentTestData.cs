@@ -832,6 +832,103 @@ Wagon ( US2BNSFCar
 """,
             new WriterOptions{ Inline = ["InertiaTensor", "Conditions", "State"], Table = { new WriterOptions.TableConfig { Name="Friction", Columns = "5", ColumnSeparator = "\t" } } }
         };
+
+        yield return new object[]
+        {
+"""
+SIMISA@@@@@@@@@@JINX0x1t______
+
+
+
+Tr_SMS (
+	ScalabiltyGroup( 3
+		Activation (
+			ExternalCam ()
+			Distance    (300)
+		)
+		Deactivation (
+			PassengerCam	()
+			CabCam			()
+			Distance    	(300)
+		)
+		Volume ( 1.0)
+		Stereo ( )
+		Streams ( 1
+			Stream (
+				Priority ( 2 )
+				Triggers ( 2
+					Variable_Trigger ( Distance_Dec_Past 280
+						StartLoop ( 1
+							File ( "yrd_uk.wav" -1 )
+							SelectionMethod ( RandomSelection )
+						)
+					)
+					Variable_Trigger ( Distance_Inc_Past 290
+						ReleaseLoopRelease ( )
+					)
+				)
+				VolumeCurve(
+					DistanceControlled
+					CurvePoints ( 3
+	  					 0.0	1.0
+	  					100.0	1.0
+						290.0	0.0
+					)
+					Granularity (0.01)
+				)
+			)
+		)
+	)
+)
+
+
+""",
+"""
+SIMISA@@@@@@@@@@JINX0x1t______
+
+Tr_SMS (
+	ScalabiltyGroup ( 3
+		Activation (
+			ExternalCam ( )
+			Distance ( 300 )
+		)
+		Deactivation (
+			PassengerCam ( )
+			CabCam ( )
+			Distance ( 300 )
+		)
+		Volume ( 1.0 )
+		Stereo ( )
+		Streams ( 1
+			Stream (
+				Priority ( 2 )
+				Triggers ( 2
+					Variable_Trigger ( Distance_Dec_Past 280
+						StartLoop ( 1
+							File ( "yrd_uk.wav" -1 )
+							SelectionMethod ( RandomSelection )
+						)
+					)
+					Variable_Trigger ( Distance_Inc_Past 290
+						ReleaseLoopRelease ( )
+					)
+				)
+				VolumeCurve ( DistanceControlled
+					CurvePoints ( 3
+						  0.0 1.0
+						100.0 1.0
+						290.0 0.0
+					)
+					Granularity ( 0.01 )
+				)
+			)
+		)
+	)
+)
+
+""",
+            new WriterOptions{ Table = { new WriterOptions.TableConfig { Name= "CurvePoints", Columns = "2", ColumnSeparator = " ", Offset = 1, FixedWidth = true } } }
+        };
     }
 
     IEnumerator IEnumerable.GetEnumerator()
