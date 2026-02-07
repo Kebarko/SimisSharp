@@ -43,7 +43,7 @@ internal class Writer : IWriter
 
         sb.Append(node.Formatting.GetQuotedValue(node.Value, options.PreserveQuotes));
 
-        if (!inline && options.Inline.Any(node.IsMatchForPath))
+        if (!inline && options.Inline.Any(path => SimisPathService.IsMatchForPath(node, path)))
         {
             inline = true;
         }
@@ -54,7 +54,7 @@ internal class Writer : IWriter
 
             bool closeAtNextLine = false;
             bool insideComment = false;
-            TableConfig? tableConfig = options.Table.SingleOrDefault(t => node.IsMatchForPath(t.Name));
+            TableConfig? tableConfig = options.Table.SingleOrDefault(t => SimisPathService.IsMatchForPath(node, t.Name));
             int totalColumns = 0;
             int currentColumn = 0;
             int[] columnWidths = [];
@@ -150,7 +150,7 @@ internal class Writer : IWriter
         int columns = 0;
         if (!int.TryParse(tableConfig.Columns, out columns))
         {
-            IList<SimisNode> sourceNodes = node.FindNodesByPath(tableConfig.Columns);
+            IList<SimisNode> sourceNodes = SimisPathService.FindNodesByPath(node, tableConfig.Columns);
             if (sourceNodes.Count > 0)
             {
                 _ = int.TryParse(sourceNodes[0].Value, out columns);
