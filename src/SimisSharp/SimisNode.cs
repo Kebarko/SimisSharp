@@ -32,17 +32,17 @@ public class SimisNode(string? value = null)
         return node;
     }
 
-    public IReadOnlyList<SimisNode> GetNodes()
+    public IList<SimisNode> GetNodes()
     {
         return subnodes.ToList();
     }
 
-    public IReadOnlyList<SimisNode> GetNodes(Func<SimisNode, bool> predicate)
+    public IList<SimisNode> GetNodes(Func<SimisNode, bool> predicate)
     {
         return subnodes.Where(predicate).ToList();
     }
 
-    public IReadOnlyList<SimisNode> GetNodes(string value)
+    public IList<SimisNode> GetNodes(string value)
     {
         return subnodes.Where(c => c.Value == value).ToList();
     }
@@ -116,7 +116,7 @@ public class SimisNode(string? value = null)
         return true;
     }
 
-    public IReadOnlyList<SimisNode> FindNodesByPath(string path)
+    public IList<SimisNode> FindNodesByPath(string path)
     {
         var result = new List<SimisNode>();
 
@@ -191,7 +191,7 @@ public class SimisNode(string? value = null)
 
         ParseSegment(segment, out string? segmentName, out int? segmentIndex);
 
-        IReadOnlyList<SimisNode> filtered;
+        IList<SimisNode> filtered;
         if (segmentName == null)
         {
             filtered = node.GetNodes();

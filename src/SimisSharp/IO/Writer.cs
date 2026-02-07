@@ -50,7 +50,7 @@ internal class Writer : IWriter
 
         if (!node.IsLeaf)
         {
-            IReadOnlyList<SimisNode> subnodes = node.GetNodes(n => !n.IsDummyLeaf && (!n.IsComment || options.PreserveComments));
+            IList<SimisNode> subnodes = node.GetNodes(n => !n.IsDummyLeaf && (!n.IsComment || options.PreserveComments));
 
             bool closeAtNextLine = false;
             bool insideComment = false;
@@ -150,7 +150,7 @@ internal class Writer : IWriter
         int columns = 0;
         if (!int.TryParse(tableConfig.Columns, out columns))
         {
-            IReadOnlyList<SimisNode> sourceNodes = node.FindNodesByPath(tableConfig.Columns);
+            IList<SimisNode> sourceNodes = node.FindNodesByPath(tableConfig.Columns);
             if (sourceNodes.Count > 0)
             {
                 _ = int.TryParse(sourceNodes[0].Value, out columns);
@@ -160,7 +160,7 @@ internal class Writer : IWriter
         return columns;
     }
 
-    private static int[] GetColumnWidths(IReadOnlyList<SimisNode> nodes, int totalColumns, int offset, bool preserveQuotes)
+    private static int[] GetColumnWidths(IList<SimisNode> nodes, int totalColumns, int offset, bool preserveQuotes)
     {
         var result = new int[totalColumns];
 

@@ -10,7 +10,7 @@ public class SimisNodeTest
         SimisNode node = startNode;
 
         // Act
-        IReadOnlyList<SimisNode> result = node.FindNodesByPath(path);
+        IList<SimisNode> result = node.FindNodesByPath(path);
 
         // Assert
         IList<SimisNode> expectedList = [.. expected];
