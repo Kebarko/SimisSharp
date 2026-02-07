@@ -20,8 +20,9 @@ internal class SimisDocumentTestData : IEnumerable<object[]>
  
 TPoleConfigData ( 1
   TPoleConfig ( 4
-    Filename ( telepole.s )
-    Shadow ( teleshad.s )
+    Filename ( telepole.s ) comment( Filename of the pole shape )
+    Shadow ( teleshad.s ) skip( Filename of the pole shadow shape )
+    comment ( Separation )
     Separation(10)Separation(10)
     Wire ( 0.0 6.7 0.391 )
     Wire ( 0.0 "6.7 -0.39" )
@@ -36,8 +37,9 @@ SIMISA@@@@@@@@@@JINX0r1t______
 
 TPoleConfigData ( 1
   TPoleConfig ( 4
-    Filename ( telepole.s )
-    Shadow ( teleshad.s )
+    Filename ( telepole.s ) comment ( Filename of the pole shape )
+    Shadow ( teleshad.s ) skip ( Filename of the pole shadow shape )
+    comment ( Separation )
     Separation ( 10 )
     Separation ( 10 )
     Wire ( 0.0 6.7 0.391 )

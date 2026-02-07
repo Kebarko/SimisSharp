@@ -7,30 +7,29 @@ internal class Parser : IParser
         SimisDocument document = new();
         SimisNode parent = document.Root;
         SimisNode node = document.Root;
-        byte emptyLines = 0;
+        byte newLines = 0;
 
         foreach (string token in tokens)
         {
             if (token is "(")
             {
                 parent = node;
+                newLines = 0;
             }
             else if (token is ")")
             {
                 if (ReferenceEquals(parent, node))
                     node.AddNode(new SimisNode());
 
-                if (node.Parent is not null)
-                {
-                    node.Parent.Formatting.TrailingEmptyLines = emptyLines;
-                }
-                emptyLines = 0; 
+                if (newLines > 1)
+                    node.Parent?.Formatting.TrailingEmptyLines = newLines;
 
                 parent = parent.Parent ?? document.Root;
+                newLines = 0;
             }
             else if (token == Environment.NewLine)
             {
-                emptyLines++;
+                newLines++;
             }
             else
             {
@@ -44,9 +43,13 @@ internal class Parser : IParser
                     node = new(token);
                 }
 
-                node.Formatting.LeadingEmptyLines = emptyLines;
+                node.Formatting.IsOnSameLineAsPrevious = !parent.IsLeaf && newLines == 0;
+
+                if (newLines > 1)
+                    node.Formatting.LeadingEmptyLines = newLines;
+
                 parent.AddNode(node);
-                emptyLines = 0;
+                newLines = 0;
             }
         }
 

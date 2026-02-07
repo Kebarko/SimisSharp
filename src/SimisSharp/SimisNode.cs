@@ -259,6 +259,8 @@ public class SimisNode(string? value = null)
 
     public sealed class SimisNodeFormatting()
     {
+        public bool IsOnSameLineAsPrevious { get; set; }
+
         public byte LeadingEmptyLines { get; set; }
 
         public byte TrailingEmptyLines { get; set; }

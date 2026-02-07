@@ -36,7 +36,7 @@ internal class Writer : IWriter
 
         WriteEmptyLines(sb, options.PreserveEmptyLines, node.Formatting.LeadingEmptyLines, options.CollapseEmptyLines);
 
-        if (inline)
+        if (inline || (node.IsComment && options.PreserveCommentPosition && node.Formatting.IsOnSameLineAsPrevious))
             sb.Append(' ');
         else
             sb.Append(indent);
@@ -120,7 +120,7 @@ internal class Writer : IWriter
                 }
                 else
                 {
-                    if (!inline)
+                    if (!inline && !(subnode.IsComment && options.PreserveCommentPosition && subnode.Formatting.IsOnSameLineAsPrevious))
                     {
                         closeAtNextLine = true;
                         sb.AppendLine(); 

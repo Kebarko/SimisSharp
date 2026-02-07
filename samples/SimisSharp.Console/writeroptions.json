@@ -3,6 +3,7 @@
   "IndentCharacter": "\t",
   "PreserveQuotes": true,
   "PreserveComments": true,
+  "PreserveCommentPosition": true,
   "PreserveEmptyLines": true,
   "CollapseEmptyLines": true,
   "Inline": ["InertiaTensor"],
