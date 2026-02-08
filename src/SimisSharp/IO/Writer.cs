@@ -3,8 +3,14 @@ using static KE.MSTS.SimisSharp.IO.WriterOptions;
 
 namespace KE.MSTS.SimisSharp.IO;
 
+/// <summary>
+/// Default implementation of <see cref="IWriter"/>. Writes a <see cref="SimisDocument"/> to a string honoring the settings in <see cref="WriterOptions"/>.
+/// </summary>
 internal class Writer : IWriter
 {
+    /// <summary>
+    /// Write the provided document to text according to the options.
+    /// </summary>
     public string Write(SimisDocument document, WriterOptions? options = null)
     {
         options ??= new();
@@ -19,6 +25,9 @@ internal class Writer : IWriter
         return sb.ToString();
     }
 
+    /// <summary>
+    /// Writes nodes at the document root level.
+    /// </summary>
     private static void WriteRootNode(StringBuilder sb, SimisNode node, WriterOptions options)
     {
         foreach (SimisNode subnode in node.GetNodes(n => !n.IsDummyLeaf && (!n.IsComment || options.PreserveComments)))
@@ -27,6 +36,14 @@ internal class Writer : IWriter
         }
     }
 
+    /// <summary>
+    /// Writes a single node and its children recursively.
+    /// </summary>
+    /// <param name="sb">Destination StringBuilder to append to.</param>
+    /// <param name="node">Node to write.</param>
+    /// <param name="options">Writer options controlling formatting.</param>
+    /// <param name="level">Current indent level.</param>
+    /// <param name="inline">Whether this node should be written inline with its parent.</param>
     private static void WriteNode(StringBuilder sb, SimisNode node, WriterOptions options, int level, bool inline)
     {
         string indent = new(options.IndentCharacter, level * options.IndentSize);
@@ -145,6 +162,9 @@ internal class Writer : IWriter
         WriteEmptyLines(sb, options.PreserveEmptyLines, node.Formatting.TrailingEmptyLines, options.CollapseEmptyLines);
     }
 
+    /// <summary>
+    /// Resolve the configured column count. If <see cref="TableConfig.Columns"/> contains a number that is parsed, that value is returned; otherwise the value is looked up by path on the node.
+    /// </summary>
     private static int GetColumns(TableConfig tableConfig, SimisNode node)
     {
         int columns = 0;
@@ -160,6 +180,14 @@ internal class Writer : IWriter
         return columns;
     }
 
+    /// <summary>
+    /// Compute maximum width for each column for fixed-width table output.
+    /// </summary>
+    /// <param name="nodes">Flat list of child nodes to measure.</param>
+    /// <param name="totalColumns">Number of columns in the table.</param>
+    /// <param name="offset">Index offset before the table columns start.</param>
+    /// <param name="preserveQuotes">Whether quoted strings should keep their quotes when measuring.</param>
+    /// <returns>Array of widths with length equal to <paramref name="totalColumns"/>.</returns>
     private static int[] GetColumnWidths(IList<SimisNode> nodes, int totalColumns, int offset, bool preserveQuotes)
     {
         var result = new int[totalColumns];
@@ -179,6 +207,9 @@ internal class Writer : IWriter
         return result;
     }
 
+    /// <summary>
+    /// Append the requested number of empty lines to the builder, respecting collapse rules.
+    /// </summary>
     private static void WriteEmptyLines(StringBuilder sb, bool preserveEmptyLines, int count, bool collapseEmptyLines)
     {
         if (preserveEmptyLines)
@@ -193,6 +224,9 @@ internal class Writer : IWriter
         }
     }
 
+    /// <summary>
+    /// Returns true if the current StringBuilder ends with the environment newline sequence.
+    /// </summary>
     private static bool EndsWithNewLine(StringBuilder sb)
     {
         string newLine = Environment.NewLine;

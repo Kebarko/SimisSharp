@@ -1,7 +1,13 @@
 ﻿namespace KE.MSTS.SimisSharp.IO;
 
+/// <summary>
+/// Default parser implementation that builds a <see cref="SimisDocument"/> from a token stream.
+/// </summary>
 internal class Parser : IParser
 {
+    /// <summary>
+    /// Parse the provided tokens into a document tree. Handles node quoting and leading/trailing empty line counts.
+    /// </summary>
     public SimisDocument Parse(IEnumerable<string> tokens)
     {
         SimisDocument document = new();

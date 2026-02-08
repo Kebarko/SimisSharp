@@ -4,55 +4,100 @@ using System.Diagnostics;
 namespace KE.MSTS.SimisSharp;
 
 [DebuggerDisplay("Value='{Value}' Parent='{Parent?.Value}' Subnodes='{subnodes.Count}'")]
+/// <summary>
+/// Represents a node in the Simis document tree. Nodes may be leaves (value) or containers (have child nodes). The root node is a dummy node where <see cref="Value"/> is null.
+/// </summary>
 public class SimisNode(string? value = null)
 {
     private readonly IList<SimisNode> subnodes = [];
 
+    /// <summary>
+    /// The value of the node. Null for dummy nodes (including the root and empty placeholders).
+    /// </summary>
     public string? Value { get; } = value;
 
+    /// <summary>
+    /// Parent node; null for the document root.
+    /// </summary>
     public SimisNode? Parent { get; private set; }
 
+    /// <summary>
+    /// Formatting details for this node (leading/trailing blank lines, quoting, comment position).
+    /// </summary>
     public SimisNodeFormatting Formatting { get; } = new SimisNodeFormatting();
 
+    /// <summary>
+    /// True when node has no child nodes.
+    /// </summary>
     public bool IsLeaf => subnodes.Count == 0;
 
+    /// <summary>
+    /// True when node is a leaf and has no value (used to represent an empty element).
+    /// </summary>
     public bool IsDummyLeaf => IsLeaf && Value == null;
 
+    /// <summary>
+    /// True when node is the dummy root (no parent and no value).
+    /// </summary>
     public bool IsDummyRoot => Parent == null && Value == null;
 
+    /// <summary>
+    /// True when the node value matches a configured comment token.
+    /// </summary>
     public bool IsComment => Value != null && TokenConfiguration.CommentTokens.Contains(Value);
 
+    /// <summary>
+    /// Returns a shallow copy list of child nodes.
+    /// </summary>
     public IList<SimisNode> GetNodes()
     {
         return subnodes.ToList();
     }
 
+    /// <summary>
+    /// Returns a shallow copy list of child nodes filtered by <paramref name="predicate"/>.
+    /// </summary>
     public IList<SimisNode> GetNodes(Func<SimisNode, bool> predicate)
     {
         return subnodes.Where(predicate).ToList();
     }
 
+    /// <summary>
+    /// Find all child nodes with the specified <paramref name="value"/>.
+    /// </summary>
     public IList<SimisNode> GetNodes(string value)
     {
         return subnodes.Where(c => c.Value == value).ToList();
     }
 
+    /// <summary>
+    /// Find the first child with the specified <paramref name="value"/>, or null if none found.
+    /// </summary>
     public SimisNode? GetNode(string value)
     {
         return subnodes.FirstOrDefault(c => c.Value == value);
     }
 
+    /// <summary>
+    /// Adds a new leaf child with the specified <paramref name="value"/>.
+    /// </summary>
     public void AddNode(string value)
     {
         AddNode(new SimisNode(value));
     }
 
+    /// <summary>
+    /// Adds the given <paramref name="subnode"/> as a child and sets its parent reference.
+    /// </summary>
     public void AddNode(SimisNode subnode)
     {
         subnode.Parent = this;
         subnodes.Add(subnode);
     }
 
+    /// <summary>
+    /// Removes all child nodes that have the specified value.
+    /// </summary>
     public void RemoveNode(string value)
     {
         foreach (SimisNode subnode in subnodes.Where(c => c.Value == value))
@@ -61,6 +106,9 @@ public class SimisNode(string? value = null)
         }
     }
 
+    /// <summary>
+    /// Removes a specific child node and clears its parent reference.
+    /// </summary>
     public void RemoveNode(SimisNode subnode)
     {
         if (subnodes.Remove(subnode))
@@ -69,6 +117,9 @@ public class SimisNode(string? value = null)
         }
     }
 
+    /// <summary>
+    /// Remove all child nodes and clear each child's parent reference.
+    /// </summary>
     public void RemoveAllNodes()
     {
         foreach (SimisNode subnode in subnodes)
@@ -78,16 +129,37 @@ public class SimisNode(string? value = null)
         subnodes.Clear();
     }
 
+    /// <summary>
+    /// Holds formatting metadata for a <see cref="SimisNode"/> such as quoting and blank line counts.
+    /// </summary>
     public sealed class SimisNodeFormatting()
     {
+        /// <summary>
+        /// True when this node was parsed as being on the same line as the previous node.
+        /// </summary>
         public bool IsOnSameLineAsPrevious { get; set; }
 
+        /// <summary>
+        /// Number of blank lines that preceded the node when parsed.
+        /// </summary>
         public byte LeadingEmptyLines { get; set; }
 
+        /// <summary>
+        /// Number of blank lines that followed the node when parsed.
+        /// </summary>
         public byte TrailingEmptyLines { get; set; }
 
+        /// <summary>
+        /// True when the node value was originally quoted in the input.
+        /// </summary>
         public bool IsQuoted { get; set; }
 
+        /// <summary>
+        /// Returns the node value optionally wrapped in quotes based on <paramref name="preserveQoutes"/> and whether the value contains whitespace.
+        /// </summary>
+        /// <param name="value">The raw node value.</param>
+        /// <param name="preserveQoutes">When true, respect the original quoting state.</param>
+        /// <returns>Value wrapped with quotes if necessary, otherwise the original value, or empty string for null.</returns>
         public string GetQuotedValue(string? value, bool preserveQoutes)
         {
             if (value is null)

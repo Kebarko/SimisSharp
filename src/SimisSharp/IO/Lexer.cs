@@ -1,14 +1,29 @@
 ﻿namespace KE.MSTS.SimisSharp.IO;
 
+/// <summary>
+/// Default lexer implementation for Simis text format.
+/// Produces tokens such as words, quoted strings, parentheses and newline tokens.
+/// </summary>
 internal class Lexer : ILexer
 {
+    /// <summary>
+    /// Internal lexer state machine states.
+    /// </summary>
     private enum LexerState
     {
+        /// <summary>Normal scanning mode (not inside quotes or special blocks).</summary>
         Normal,
+        /// <summary>Inside a quoted string.</summary>
         Quoted,
+        /// <summary>Inside an unprocessed/comment block triggered by configured comment tokens.</summary>
         Unprocessed
     }
 
+    /// <summary>
+    /// Tokenize the provided <paramref name="text"/>. Throws for unterminated quoted/unprocessed blocks.
+    /// </summary>
+    /// <exception cref="ArgumentNullException">When <paramref name="text"/> is null.</exception>
+    /// <exception cref="FormatException">When a quoted string or an unprocessed block is not terminated.</exception>
     public IList<string> Lex(string text)
     {
         if (text is null)
@@ -106,6 +121,9 @@ internal class Lexer : ILexer
         return tokens;
     }
 
+    /// <summary>
+    /// Emit a token from <paramref name="span"/> between indexes <paramref name="start"/> and <paramref name="end"/> into <paramref name="tokens"/> and update <paramref name="state"/> if the token is a comment token.
+    /// </summary>
     private static void Emit(ReadOnlySpan<char> span, List<string> tokens, ref int start, int end, ref LexerState state)
     {
         if (start >= 0 && end < span.Length && end >= start)

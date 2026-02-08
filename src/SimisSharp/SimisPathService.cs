@@ -1,7 +1,16 @@
 ﻿namespace KE.MSTS.SimisSharp;
 
+/// <summary>
+/// Utility service for matching and locating nodes by a path-like expression.
+/// </summary>
 public static class SimisPathService
 {
+    /// <summary>
+    /// Determines whether the specified <paramref name="node"/> matches the given <paramref name="path"/>.
+    /// </summary>
+    /// <param name="node">Node to test against the path (typically the current node).</param>
+    /// <param name="path">Path expression. May be absolute (starting with '/') or relative. Uses '/' separators.</param>
+    /// <returns><c>true</c> when the node's ancestry matches the path segments; otherwise <c>false</c>.</returns>
     public static bool IsMatchForPath(SimisNode node, string path)
     {
         if (string.IsNullOrWhiteSpace(path))
@@ -30,6 +39,12 @@ public static class SimisPathService
         return true;
     }
 
+    /// <summary>
+    /// Finds nodes matching the supplied <paramref name="path"/> starting from the supplied <paramref name="node"/>.
+    /// </summary>
+    /// <param name="node">Starting node used to resolve relative paths; for absolute paths the document root is used.</param>
+    /// <param name="path">Path expression. Can be absolute (leading '/') or relative; supports indices and special segments "." and "..".</param>
+    /// <returns>List of matching nodes. Empty list when no matches are found or the path is empty/invalid.</returns>
     public static IList<SimisNode> FindNodesByPath(SimisNode node, string path)
     {
         var result = new List<SimisNode>();
@@ -77,6 +92,11 @@ public static class SimisPathService
         return result;
     }
 
+    /// <summary>
+    /// Walks up the parent chain to locate the root node for the given <paramref name="node"/>.
+    /// </summary>
+    /// <param name="node">Node from which to discover the document root.</param>
+    /// <returns>The root <see cref="SimisNode"/> (the highest ancestor with no parent).</returns>
     private static SimisNode GetRoot(SimisNode node)
     {
         while (node.Parent != null)
@@ -86,6 +106,13 @@ public static class SimisPathService
         return node;
     }
 
+    /// <summary>
+    /// Recursive helper that resolves path segments and accumulates results.
+    /// </summary>
+    /// <param name="node">Current node under consideration.</param>
+    /// <param name="segments">Array of path segments to match.</param>
+    /// <param name="index">Current index within <paramref name="segments"/>.</param>
+    /// <param name="result">Accumulator for matched nodes.</param>
     private static void FindNodesByPathRecursive(SimisNode node, string[] segments, int index, List<SimisNode> result)
     {
         if (node == null)
@@ -142,6 +169,12 @@ public static class SimisPathService
         }
     }
 
+    /// <summary>
+    /// Parses a single path segment extracting an optional name and optional 1-based index.
+    /// </summary>
+    /// <param name="segment">Segment to parse (examples: "name", "name[2]", "[3]").</param>
+    /// <param name="name">Output name portion, or <c>null</c> when the segment is an index-only segment.</param>
+    /// <param name="index">Output 1-based index when present; otherwise <c>null</c>.</param>
     private static void ParseSegment(string segment, out string? name, out int? index)
     {
         name = null;
