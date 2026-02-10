@@ -24,11 +24,5 @@
     { "Name": "ORTSDynamicBrakeForceCurvesAC/*", "Columns": "2", "ColumnSeparator": " ", "FixedWidth": true },
     { "Name": "ORTSDynamicBrakeForceCurvesDC/*", "Columns": "2", "ColumnSeparator": " ", "FixedWidth": true },
     { "Name": "CurvePoints/*", "Columns": "2", "ColumnSeparator": " ", "FixedWidth": true, "Offset": 1 }
-    {
-      "Name": "Table",
-      "Columns": "../[2]",
-      "ColumnSeparator": " ",
-      "FixedWidth": true
-    }
   ]
 }
