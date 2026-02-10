@@ -6,29 +6,23 @@
   "PreserveCommentPosition": true,
   "PreserveEmptyLines": true,
   "CollapseEmptyLines": true,
-  "Inline": ["InertiaTensor"],
-  "Table":
-  [
-    {
-      "Name": "Friction",
-      "Columns": "5",
-      "ColumnSeparator": "\t"
-    },
-    {
-      "Name": "Description",
-      "Columns": "2",
-      "ColumnSeparator": ""
-    },
-    {
-      "Name": "EngineOperatingProcedures",
-      "Columns": "2",
-      "ColumnSeparator": ""
-    },
-    {
-      "Name": "Table",
-      "Columns": "../[2]",
-      "ColumnSeparator": " ",
-      "FixedWidth": true
-    }
+  "Inline": [ "InertiaTensor", "Conditions", "State", "Initial_Trigger", "Discrete_Trigger", "Variable_Trigger", "Random_Trigger" ],
+  "Table": [
+    { "Name": "Friction", "Columns": "5", "ColumnSeparator": "\t" },
+    { "Name": "Description", "Columns": "2", "ColumnSeparator": "" },
+    { "Name": "EngineOperatingProcedures", "Columns": "2", "ColumnSeparator": "" },
+    { "Name": "Table", "Columns": "../[2]", "ColumnSeparator": " ", "FixedWidth": true },
+    { "Name": "BrakePipeChargeRate", "Columns": "2", "ColumnSeparator": " ", "FixedWidth": true },
+    { "Name": "BrakePipeDischargeRate", "Columns": "2", "ColumnSeparator": " ", "FixedWidth": true },
+    { "Name": "ThrottleRPMTab", "Columns": "2", "ColumnSeparator": " ", "FixedWidth": true },
+    { "Name": "DieselPowerTab", "Columns": "2", "ColumnSeparator": " ", "FixedWidth": true },
+    { "Name": "DieselTorqueTab", "Columns": "2", "ColumnSeparator": " ", "FixedWidth": true },
+    { "Name": "DieselConsumptionTab", "Columns": "2", "ColumnSeparator": " ", "FixedWidth": true },
+    { "Name": "ORTSBrakeShoeFriction", "Columns": "2", "ColumnSeparator": " ", "FixedWidth": true },
+    { "Name": "ORTSMaxTractiveForceCurves/*", "Columns": "2", "ColumnSeparator": " ", "FixedWidth": true },
+    { "Name": "ORTSDynamicBrakeForceCurves/*", "Columns": "2", "ColumnSeparator": " ", "FixedWidth": true },
+    { "Name": "ORTSDynamicBrakeForceCurvesAC/*", "Columns": "2", "ColumnSeparator": " ", "FixedWidth": true },
+    { "Name": "ORTSDynamicBrakeForceCurvesDC/*", "Columns": "2", "ColumnSeparator": " ", "FixedWidth": true },
+    { "Name": "CurvePoints/*", "Columns": "2", "ColumnSeparator": " ", "FixedWidth": true, "Offset": 1 }
   ]
 }
