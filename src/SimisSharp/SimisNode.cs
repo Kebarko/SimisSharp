@@ -3,7 +3,7 @@ using System.Diagnostics;
 
 namespace KE.MSTS.SimisSharp;
 
-[DebuggerDisplay("Value='{Value}' Parent='{Parent?.Value}' Subnodes='{subnodes.Count}'")]
+[DebuggerDisplay("Value='{Value}' Parent='{Parent?.Value}' Subnodes={subnodes.Count}")]
 /// <summary>
 /// Represents a node in the Simis document tree. Nodes may be leaves (value) or containers (have child nodes). The root node is a dummy node where <see cref="Value"/> is null.
 /// </summary>
@@ -132,6 +132,7 @@ public class SimisNode(string? value = null)
     /// <summary>
     /// Holds formatting metadata for a <see cref="SimisNode"/> such as quoting and blank line counts.
     /// </summary>
+    [DebuggerDisplay("OnSameLine={IsOnSameLineAsPrevious}, Lead={LeadingEmptyLines}, Trail={TrailingEmptyLines}, Quoted={IsQuoted}")]
     public sealed class SimisNodeFormatting()
     {
         /// <summary>
