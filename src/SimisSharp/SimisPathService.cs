@@ -24,10 +24,10 @@ public static class SimisPathService
 
         for (int i = segments.Length - 1; i >= 0; i--)
         {
-            if (currentNode == null)
+            if (currentNode == null || currentNode.Value == null)
                 return false;
 
-            if (currentNode.Value != segments[i])
+            if (!WildcardMatcher.IsMatch(currentNode.Value, segments[i]))
                 return false;
 
             currentNode = currentNode.Parent;
