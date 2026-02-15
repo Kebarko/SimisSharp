@@ -63,19 +63,19 @@ public class SimisNode(string? value = null)
     }
 
     /// <summary>
-    /// Find all child nodes with the specified <paramref name="value"/>.
+    /// Find all child nodes with the specified <paramref name="value"/> using the given string comparison.
     /// </summary>
-    public IList<SimisNode> GetNodes(string value)
+    public IList<SimisNode> GetNodes(string value, StringComparison comparisonType = StringComparison.Ordinal)
     {
-        return subnodes.Where(c => c.Value == value).ToList();
+        return subnodes.Where(c => string.Equals(c.Value, value, comparisonType)).ToList();
     }
 
     /// <summary>
-    /// Find the first child with the specified <paramref name="value"/>, or null if none found.
+    /// Find the first child with the specified <paramref name="value"/> using the given string comparison, or null if none found.
     /// </summary>
-    public SimisNode? GetNode(string value)
+    public SimisNode? GetNode(string value, StringComparison comparisonType = StringComparison.Ordinal)
     {
-        return subnodes.FirstOrDefault(c => c.Value == value);
+        return subnodes.FirstOrDefault(c => string.Equals(c.Value, value, comparisonType));
     }
 
     /// <summary>
@@ -96,11 +96,11 @@ public class SimisNode(string? value = null)
     }
 
     /// <summary>
-    /// Removes all child nodes that have the specified value.
+    /// Removes all child nodes that have the specified value using the given string comparison.
     /// </summary>
-    public void RemoveNode(string value)
+    public void RemoveNode(string value, StringComparison comparisonType = StringComparison.Ordinal)
     {
-        foreach (SimisNode subnode in subnodes.Where(c => c.Value == value))
+        foreach (SimisNode subnode in subnodes.Where(c => string.Equals(c.Value, value, comparisonType)))
         {
             RemoveNode(subnode);
         }
