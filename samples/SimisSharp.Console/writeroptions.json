@@ -6,6 +6,7 @@
   "PreserveCommentPosition": true,
   "PreserveEmptyLines": true,
   "CollapseEmptyLines": true,
+  "IgnoreCase": true,
   "Inline": [ "InertiaTensor", "Conditions", "State", "Initial_Trigger", "Discrete_Trigger", "Variable_Trigger", "Random_Trigger" ],
   "Table": [
     { "Name": "Friction", "Columns": "5", "ColumnSeparator": "\t" },

@@ -12,8 +12,9 @@ public static class WildcardMatcher
     /// </summary>
     /// <param name="text">The string to test for a match against the pattern. This parameter cannot be null.</param>
     /// <param name="pattern">The pattern to match the text against. The pattern may contain the wildcard characters '?' to match any single character and '*' to match any sequence of characters, including an empty sequence. This parameter cannot be null.</param>
+    /// <param name="ignoreCase">A boolean value indicating whether the match should ignore case differences between characters.</param>
     /// <returns>true if the text matches the pattern; otherwise, false.</returns>
-    public static bool IsMatch(string text, string pattern)
+    public static bool IsMatch(string text, string pattern, bool ignoreCase)
     {
         if (text == null || pattern == null)
             return false;
@@ -56,7 +57,7 @@ public static class WildcardMatcher
                     // '*' can match zero characters (table[i, j - 1]) or one/more characters (table[i - 1, j]).
                     table[i, j] = table[i, j - 1] || table[i - 1, j];
                 }
-                else if (pattern[j - 1] == '?' || pattern[j - 1] == text[i - 1])
+                else if (pattern[j - 1] == '?' || CharsEqual(pattern[j - 1], text[i - 1], ignoreCase))
                 {
                     // Match current character if it's '?' or matches the text character.
                     table[i, j] = table[i - 1, j - 1];
@@ -97,5 +98,12 @@ public static class WildcardMatcher
         }
 
         return sb.ToString();
+    }
+
+    private static bool CharsEqual(char c1, char c2, bool ignoreCase)
+    {
+        return ignoreCase
+            ? char.ToUpperInvariant(c1) == char.ToUpperInvariant(c2)
+            : c1 == c2;
     }
 }

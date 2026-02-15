@@ -6,105 +6,117 @@ public class WildcardMatcherTest
     // =========================
     // Empty / Null-Like Cases
     // =========================
-    [InlineData("", "", true)]
-    [InlineData("", "*", true)]
-    [InlineData("", "**", true)]
-    [InlineData("", "?", false)]
-    [InlineData("", "?*", false)]
-    [InlineData("a", "", false)]
+    [InlineData("", "", false, true)]
+    [InlineData("", "*", false, true)]
+    [InlineData("", "**", false, true)]
+    [InlineData("", "?", false, false)]
+    [InlineData("", "?*", false, false)]
+    [InlineData("a", "", false, false)]
 
     // =========================
     // Single Character Cases
     // =========================
-    [InlineData("a", "a", true)]
-    [InlineData("a", "b", false)]
-    [InlineData("a", "?", true)]
-    [InlineData("a", "*", true)]
-    [InlineData("a", "**", true)]
-    [InlineData("a", "??", false)]
-    [InlineData("a", "*?", true)]
-    [InlineData("a", "?*", true)]
+    [InlineData("a", "a", false, true)]
+    [InlineData("a", "b", false, false)]
+    [InlineData("a", "?", false, true)]
+    [InlineData("a", "*", false, true)]
+    [InlineData("a", "**", false, true)]
+    [InlineData("a", "??", false, false)]
+    [InlineData("a", "*?", false, true)]
+    [InlineData("a", "?*", false, true)]
 
     // =========================
     // Only Literal Matching
     // =========================
-    [InlineData("abc", "abc", true)]
-    [InlineData("abc", "abcd", false)]
-    [InlineData("abcd", "abc", false)]
-    [InlineData("abc", "abx", false)]
+    [InlineData("abc", "abc", false, true)]
+    [InlineData("abc", "abcd", false, false)]
+    [InlineData("abcd", "abc", false, false)]
+    [InlineData("abc", "abx", false, false)]
 
     // =========================
     // Only '*' Patterns
     // =========================
-    [InlineData("abc", "*", true)]
-    [InlineData("abc", "**", true)]
-    [InlineData("abc", "***", true)]
+    [InlineData("abc", "*", false, true)]
+    [InlineData("abc", "**", false, true)]
+    [InlineData("abc", "***", false, true)]
 
     // =========================
     // '?' Wildcards
     // =========================
-    [InlineData("abc", "???", true)]
-    [InlineData("abc", "??", false)]
-    [InlineData("abc", "a?c", true)]
-    [InlineData("abc", "?b?", true)]
-    [InlineData("abc", "?a?", false)]
+    [InlineData("abc", "???", false, true)]
+    [InlineData("abc", "??", false, false)]
+    [InlineData("abc", "a?c", false, true)]
+    [InlineData("abc", "?b?", false, true)]
+    [InlineData("abc", "?a?", false, false)]
 
     // =========================
     // Mixed '?' and '*'
     // =========================
-    [InlineData("abc", "*?", true)]
-    [InlineData("abc", "?*", true)]
-    [InlineData("abc", "*?*", true)]
-    [InlineData("abc", "*a*", true)]
-    [InlineData("abc", "*b*", true)]
-    [InlineData("abc", "*d*", false)]
-    [InlineData("abc", "a*?", true)]
-    [InlineData("abc", "a*?d", false)]
-    [InlineData("abc", "*a", false)]
-    [InlineData("abc", "c*", false)]
+    [InlineData("abc", "*?", false, true)]
+    [InlineData("abc", "?*", false, true)]
+    [InlineData("abc", "*?*", false, true)]
+    [InlineData("abc", "*a*", false, true)]
+    [InlineData("abc", "*b*", false, true)]
+    [InlineData("abc", "*d*", false, false)]
+    [InlineData("abc", "a*?", false, true)]
+    [InlineData("abc", "a*?d", false, false)]
+    [InlineData("abc", "*a", false, false)]
+    [InlineData("abc", "c*", false, false)]
 
     // =========================
     // Consecutive '*' (Normalization)
     // =========================
-    [InlineData("abc", "a**c", true)]
-    [InlineData("abc", "a***c", true)]
-    [InlineData("abc", "***a**b**c***", true)]
-    [InlineData("abc", "***a**b**d***", false)]
+    [InlineData("abc", "a**c", false, true)]
+    [InlineData("abc", "a***c", false, true)]
+    [InlineData("abc", "***a**b**c***", false, true)]
+    [InlineData("abc", "***a**b**d***", false, false)]
 
     // =========================
     // Leading and Trailing '*'
     // =========================
-    [InlineData("abcdef", "*def", true)]
-    [InlineData("abcdef", "abc*", true)]
-    [InlineData("abcdef", "*cd*", true)]
-    [InlineData("abcdef", "*ce*", false)]
+    [InlineData("abcdef", "*def", false, true)]
+    [InlineData("abcdef", "abc*", false, true)]
+    [InlineData("abcdef", "*cd*", false, true)]
+    [InlineData("abcdef", "*ce*", false, false)]
 
     // =========================
     // Minimum Length Boundary (Pruning)
     // =========================
-    [InlineData("abc", "abcd*", false)]   // required chars > text
-    [InlineData("abc", "????", false)]
-    [InlineData("abc", "?a?c", false)]
+    [InlineData("abc", "abcd*", false, false)]
+    [InlineData("abc", "????", false, false)]
+    [InlineData("abc", "?a?c", false, false)]
 
     // =========================
     // Classic Tricky Cases
     // =========================
-    [InlineData("adceb", "*a*b", true)]
-    [InlineData("acdcb", "a*c?b", false)]
-    [InlineData("aa", "a", false)]
-    [InlineData("aa", "*", true)]
-    [InlineData("cb", "?a", false)]
+    [InlineData("adceb", "*a*b", false, true)]
+    [InlineData("acdcb", "a*c?b", false, false)]
+    [InlineData("aa", "a", false, false)]
+    [InlineData("aa", "*", false, true)]
+    [InlineData("cb", "?a", false, false)]
 
     // =========================
     // Complex Patterns
     // =========================
-    [InlineData("mississippi", "m*iss*?ppi", true)]
-    [InlineData("mississippi", "m*iss*?ppx", false)]
-    [InlineData("abefcdgiescdfimde", "ab*cd?i*de", true)]
-    public void  IsMatchTest(string text, string pattern, bool expected)
+    [InlineData("mississippi", "m*iss*?ppi", false, true)]
+    [InlineData("mississippi", "m*iss*?ppx", false, false)]
+    [InlineData("abefcdgiescdfimde", "ab*cd?i*de", false, true)]
+
+    // =========================
+    // Case-Insensitive Matching
+    // =========================
+    [InlineData("ABC", "abc", true, true)]
+    [InlineData("abc", "ABC", true, true)]
+    [InlineData("AbC", "aBc", true, true)]
+    [InlineData("AbC", "a?c", true, true)]
+    [InlineData("AbC", "*b*", true, true)]
+    [InlineData("HelloWorld", "he*ld", true, true)]
+    [InlineData("HelloWorld", "he*lx", true, false)]
+    [InlineData("CaseTest", "casetest", false, false)]
+    public void IsMatchTest(string text, string pattern, bool ignoreCase, bool expected)
     {
         // Act
-        bool result = WildcardMatcher.IsMatch(text, pattern);
+        bool result = WildcardMatcher.IsMatch(text, pattern, ignoreCase);
 
         // Assert
         Assert.Equal(expected, result);

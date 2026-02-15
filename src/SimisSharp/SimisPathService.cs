@@ -10,8 +10,9 @@ public static class SimisPathService
     /// </summary>
     /// <param name="node">Node to test against the path (typically the current node).</param>
     /// <param name="path">Path expression. May be absolute (starting with '/') or relative. Uses '/' separators.</param>
+    /// <param name="ignoreCase">Whether to ignore case when matching node values to path segments.</param>
     /// <returns><c>true</c> when the node's ancestry matches the path segments; otherwise <c>false</c>.</returns>
-    public static bool IsMatchForPath(SimisNode node, string path)
+    public static bool IsMatchForPath(SimisNode node, string path, bool ignoreCase)
     {
         if (string.IsNullOrWhiteSpace(path))
             return false;
@@ -27,7 +28,7 @@ public static class SimisPathService
             if (currentNode == null || currentNode.Value == null)
                 return false;
 
-            if (!WildcardMatcher.IsMatch(currentNode.Value, segments[i]))
+            if (!WildcardMatcher.IsMatch(currentNode.Value, segments[i], ignoreCase))
                 return false;
 
             currentNode = currentNode.Parent;

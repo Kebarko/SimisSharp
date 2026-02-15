@@ -48,6 +48,11 @@ public class WriterOptions
     public bool CollapseEmptyLines { get; set; } = true;
 
     /// <summary>
+    /// When true, writer ignores case when matching paths for inline and table formatting.
+    /// </summary>
+    public bool IgnoreCase { get; set; } = true;
+
+    /// <summary>
     /// Collection of paths that should be written inline.
     /// Default is empty list.
     /// </summary>

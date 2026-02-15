@@ -60,7 +60,7 @@ internal class Writer : IWriter
 
         sb.Append(node.Formatting.GetQuotedValue(node.Value, options.PreserveQuotes));
 
-        if (!inline && options.Inline.Any(path => SimisPathService.IsMatchForPath(node, path)))
+        if (!inline && options.Inline.Any(path => SimisPathService.IsMatchForPath(node, path, options.IgnoreCase)))
         {
             inline = true;
         }
@@ -71,7 +71,7 @@ internal class Writer : IWriter
 
             bool closeAtNextLine = false;
             bool insideComment = false;
-            TableConfig? tableConfig = options.Table.SingleOrDefault(t => SimisPathService.IsMatchForPath(node, t.Name));
+            TableConfig? tableConfig = options.Table.SingleOrDefault(t => SimisPathService.IsMatchForPath(node, t.Name, options.IgnoreCase));
             int totalColumns = 0;
             int currentColumn = 0;
             int[] columnWidths = [];
