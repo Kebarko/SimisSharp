@@ -9,6 +9,7 @@
   "IgnoreCase": true,
   "Inline": [ "InertiaTensor", "Conditions", "State", "Initial_Trigger", "Discrete_Trigger", "Variable_Trigger", "Random_Trigger" ],
   "Table": [
+    { "Name": "Briefing", "Columns": "2", "ColumnSeparator": "" },
     { "Name": "Friction", "Columns": "5", "ColumnSeparator": "\t" },
     { "Name": "Description", "Columns": "2", "ColumnSeparator": "" },
     { "Name": "EngineOperatingProcedures", "Columns": "2", "ColumnSeparator": "" },
@@ -24,6 +25,8 @@
     { "Name": "ORTSDynamicBrakeForceCurves/*", "Columns": "2", "ColumnSeparator": " ", "FixedWidth": true },
     { "Name": "ORTSDynamicBrakeForceCurvesAC/*", "Columns": "2", "ColumnSeparator": " ", "FixedWidth": true },
     { "Name": "ORTSDynamicBrakeForceCurvesDC/*", "Columns": "2", "ColumnSeparator": " ", "FixedWidth": true },
-    { "Name": "CurvePoints/*", "Columns": "2", "ColumnSeparator": " ", "FixedWidth": true, "Offset": 1 }
+    { "Name": "CurvePoints/*", "Columns": "2", "ColumnSeparator": " ", "FixedWidth": true, "Offset": 1 },
+    { "Name": "SteamSpecialEffects/*", "Columns": "3", "ColumnSeparator": " "},
+    { "Name": "DieselSpecialEffects/*", "Columns": "3", "ColumnSeparator": " "}
   ]
 }
