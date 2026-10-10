@@ -79,7 +79,7 @@ internal class Writer : IWriter
             int[] columnWidths = [];
             if (tableConfig != null)
             {
-                totalColumns = GetColumns(tableConfig, node);
+                totalColumns = GetColumns(tableConfig, node, options.IgnoreCase);
                 if (tableConfig.FixedWidth)
                 {
                     columnWidths = GetColumnWidths(subnodes, totalColumns, tableConfig.Offset, options.PreserveQuotes);
@@ -167,12 +167,12 @@ internal class Writer : IWriter
     /// <summary>
     /// Resolve the configured column count. If <see cref="TableConfig.Columns"/> contains a number that is parsed, that value is returned; otherwise the value is looked up by path on the node.
     /// </summary>
-    private static int GetColumns(TableConfig tableConfig, SimisNode node)
+    private static int GetColumns(TableConfig tableConfig, SimisNode node, bool ignoreCase)
     {
         int columns = 0;
         if (!int.TryParse(tableConfig.Columns, out columns))
         {
-            IList<SimisNode> sourceNodes = SimisPathService.FindNodesByPath(node, tableConfig.Columns);
+            IList<SimisNode> sourceNodes = SimisPathService.FindNodesByPath(node, tableConfig.Columns, ignoreCase);
             if (sourceNodes.Count > 0)
             {
                 _ = int.TryParse(sourceNodes[0].Value, out columns);

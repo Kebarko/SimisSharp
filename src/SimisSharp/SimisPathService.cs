@@ -3,29 +3,35 @@
 /// <summary>
 /// Utility service for matching and locating nodes by a path-like expression.
 /// </summary>
+/// <remarks>
+/// <para>Paths separate segments with '/' or '\'. A name segment matches a node value. It may contain the wildcards '*' and '?'
+/// (see <see cref="WildcardMatcher"/>), and it ignores letter case by default, as MSTS and Open Rails do.</para>
+/// <para>The topmost ancestor of a node is the root of its paths. In a parsed document this is <see cref="SimisDocument.Root"/>,
+/// so the first segment of an absolute path such as <c>/Wagon/Mass</c> names a top-level node.</para>
+/// </remarks>
 public static class SimisPathService
 {
     /// <summary>
-    /// Determines whether the specified <paramref name="node"/> matches the given <paramref name="path"/>.
+    /// Determines whether the specified <paramref name="node"/> matches the given <paramref name="path"/> pattern.
+    /// The last segment must match the node and each preceding segment must match the next ancestor.
+    /// A relative path matches at any depth, while an absolute path must lead from the root to the node.
+    /// Only name segments are supported. The segments ".", ".." and indexes such as "[2]" are matched literally.
     /// </summary>
     /// <param name="node">Node to test against the path (typically the current node).</param>
-    /// <param name="path">Path expression. May be absolute (starting with '/') or relative. Uses '/' separators.</param>
+    /// <param name="path">Path pattern. May be absolute (starting with '/') or relative.</param>
     /// <param name="ignoreCase">Whether to ignore case when matching node values to path segments.</param>
     /// <returns><c>true</c> when the node's ancestry matches the path segments; otherwise <c>false</c>.</returns>
-    public static bool IsMatchForPath(SimisNode node, string path, bool ignoreCase)
+    public static bool IsMatchForPath(SimisNode node, string path, bool ignoreCase = true)
     {
         if (string.IsNullOrWhiteSpace(path))
             return false;
 
-        path = path.Replace('\\', '/').Trim();
-        bool isAbsolutePath = path.StartsWith('/');
-
-        string[] segments = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        string[] segments = SplitPath(path, out bool isAbsolutePath);
         SimisNode? currentNode = node;
 
         for (int i = segments.Length - 1; i >= 0; i--)
         {
-            if (currentNode == null || currentNode.Value == null)
+            if (currentNode?.Value == null)
                 return false;
 
             if (!WildcardMatcher.IsMatch(currentNode.Value, segments[i], ignoreCase))
@@ -34,63 +40,44 @@ public static class SimisPathService
             currentNode = currentNode.Parent;
         }
 
-        if (isAbsolutePath)
-            return currentNode == null;
-
-        return true;
+        return !isAbsolutePath || currentNode is { Parent: null };
     }
 
     /// <summary>
     /// Finds nodes matching the supplied <paramref name="path"/> starting from the supplied <paramref name="node"/>.
     /// </summary>
-    /// <param name="node">Starting node used to resolve relative paths; for absolute paths the document root is used.</param>
-    /// <param name="path">Path expression. Can be absolute (leading '/') or relative; supports indices and special segments "." and "..".</param>
-    /// <returns>List of matching nodes. Empty list when no matches are found or the path is empty/invalid.</returns>
-    public static IList<SimisNode> FindNodesByPath(SimisNode node, string path)
+    /// <param name="node">Starting node used to resolve relative paths. Absolute paths start at its root.</param>
+    /// <param name="path">Path expression. Can be absolute (leading '/') or relative. Supports the special segments "." and "..",
+    /// and a 1-based index that selects the n-th matching child, such as "Coupling[2]", or the n-th child, such as "[2]".</param>
+    /// <param name="ignoreCase">Whether to ignore case when matching node values to path segments.</param>
+    /// <returns>List of matching nodes in document order. Empty list when no matches are found or the path is empty/invalid.</returns>
+    public static IList<SimisNode> FindNodesByPath(SimisNode node, string path, bool ignoreCase = true)
     {
-        var result = new List<SimisNode>();
+        List<SimisNode> result = [];
 
         if (string.IsNullOrWhiteSpace(path))
             return result;
 
-        path = path.Replace('\\', '/').Trim();
-        bool isAbsolutePath = path.StartsWith('/');
+        string[] segments = SplitPath(path, out bool isAbsolutePath);
+        SimisNode start = isAbsolutePath ? GetRoot(node) : node;
 
-        string[] segments = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
-
-        if (segments.Length == 0)
-        {
-            if (isAbsolutePath)
-            {
-                result.Add(GetRoot(node));
-            }
-
-            return result;
-        }
-
-        if (isAbsolutePath)
-        {
-            SimisNode root = GetRoot(node);
-
-            if (root.IsDummyRoot)
-            {
-                foreach (SimisNode subnode in root.GetNodes())
-                {
-                    FindNodesByPathRecursive(subnode, segments, 0, result);
-                }
-            }
-            else
-            {
-                FindNodesByPathRecursive(root, segments, 0, result);
-            }
-
-        }
-        else
-        {
-            FindNodesByPathRecursive(node, segments, 0, result);
-        }
+        FindNodesByPathRecursive(start, segments, 0, ignoreCase, result);
 
         return result;
+    }
+
+    /// <summary>
+    /// Normalizes separators and splits <paramref name="path"/> into its segments.
+    /// </summary>
+    /// <param name="path">Path expression.</param>
+    /// <param name="isAbsolutePath">True when the path starts with a separator.</param>
+    /// <returns>Non-empty path segments.</returns>
+    private static string[] SplitPath(string path, out bool isAbsolutePath)
+    {
+        path = path.Replace('\\', '/').Trim();
+        isAbsolutePath = path.StartsWith('/');
+
+        return path.Split('/', StringSplitOptions.RemoveEmptyEntries);
     }
 
     /// <summary>
@@ -113,12 +100,10 @@ public static class SimisPathService
     /// <param name="node">Current node under consideration.</param>
     /// <param name="segments">Array of path segments to match.</param>
     /// <param name="index">Current index within <paramref name="segments"/>.</param>
+    /// <param name="ignoreCase">Whether to ignore case when matching node values to path segments.</param>
     /// <param name="result">Accumulator for matched nodes.</param>
-    private static void FindNodesByPathRecursive(SimisNode node, string[] segments, int index, List<SimisNode> result)
+    private static void FindNodesByPathRecursive(SimisNode node, string[] segments, int index, bool ignoreCase, List<SimisNode> result)
     {
-        if (node == null)
-            return;
-
         if (index == segments.Length)
         {
             result.Add(node);
@@ -129,45 +114,53 @@ public static class SimisPathService
 
         if (segment == ".")
         {
-            FindNodesByPathRecursive(node, segments, index + 1, result);
+            FindNodesByPathRecursive(node, segments, index + 1, ignoreCase, result);
             return;
         }
 
         if (segment == "..")
         {
-            if (node.Parent != null && !node.Parent.IsDummyRoot)
-                FindNodesByPathRecursive(node.Parent, segments, index + 1, result);
+            if (node.Parent != null)
+                FindNodesByPathRecursive(node.Parent, segments, index + 1, ignoreCase, result);
             return;
         }
 
         ParseSegment(segment, out string? segmentName, out int? segmentIndex);
 
-        IList<SimisNode> filtered;
-        if (segmentName == null)
-        {
-            filtered = node.GetNodes();
-        }
-        else
-        {
-            filtered = node.GetNodes(segmentName);
-        }
-
         if (segmentIndex.HasValue)
         {
-            int zeroBasedIndex = segmentIndex.Value - 1;
+            int remaining = segmentIndex.Value;
+            if (remaining < 1)
+                return;
 
-            if (zeroBasedIndex >= 0 && zeroBasedIndex < filtered.Count)
+            foreach (SimisNode child in node.GetNodes())
             {
-                FindNodesByPathRecursive(filtered[zeroBasedIndex], segments, index + 1, result);
+                if (IsMatchForSegment(child, segmentName, ignoreCase) && --remaining == 0)
+                {
+                    FindNodesByPathRecursive(child, segments, index + 1, ignoreCase, result);
+                    return;
+                }
             }
 
             return;
         }
 
-        foreach (SimisNode child in filtered)
+        foreach (SimisNode child in node.GetNodes())
         {
-            FindNodesByPathRecursive(child, segments, index + 1, result);
+            if (IsMatchForSegment(child, segmentName, ignoreCase))
+                FindNodesByPathRecursive(child, segments, index + 1, ignoreCase, result);
         }
+    }
+
+    /// <summary>
+    /// Returns true when <paramref name="node"/> matches the segment name. A segment without a name matches any node.
+    /// </summary>
+    private static bool IsMatchForSegment(SimisNode node, string? segmentName, bool ignoreCase)
+    {
+        if (segmentName == null)
+            return true;
+
+        return node.Value != null && WildcardMatcher.IsMatch(node.Value, segmentName, ignoreCase);
     }
 
     /// <summary>

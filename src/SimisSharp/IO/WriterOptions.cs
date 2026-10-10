@@ -53,7 +53,7 @@ public class WriterOptions
     public bool IgnoreCase { get; set; } = true;
 
     /// <summary>
-    /// Collection of paths that should be written inline.
+    /// Collection of path patterns of nodes that should be written inline (see <see cref="SimisPathService.IsMatchForPath"/>).
     /// Default is empty list.
     /// </summary>
     public List<string> Inline { get; set; } = [];
@@ -71,12 +71,13 @@ public class WriterOptions
     public class TableConfig
     {
         /// <summary>
-        /// The path or literal number of columns. If a non-numeric string is provided, the parser will look up the value by path on the current node.
+        /// Path pattern of the nodes written as a table (see <see cref="SimisPathService.IsMatchForPath"/>).
         /// </summary>
         public required string Name { get; set; }
 
         /// <summary>
-        /// Either a numeric string for the number of columns or a path whose value resolves to the column count.
+        /// Either a numeric string for the number of columns, or a path relative to the table node whose first match holds the column count,
+        /// such as <c>../[2]</c> (see <see cref="SimisPathService.FindNodesByPath"/>).
         /// </summary>
         public required string Columns { get; set; }
 

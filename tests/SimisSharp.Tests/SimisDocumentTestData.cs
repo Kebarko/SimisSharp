@@ -946,6 +946,52 @@ Table (
 """,
             new WriterOptions{ Table = { new WriterOptions.TableConfig { Name = "Table", Columns = "2" }, new WriterOptions.TableConfig { Name = "*", Columns = "4" } } }
         };
+
+        yield return new object[]
+        {
+"""
+Wagon (
+	Coupling (
+		Type ( Chain )
+	)
+	Brakes (
+		Coupling (
+			Type ( Air )
+		)
+	)
+)
+""",
+"""
+Wagon (
+	Coupling ( Type ( Chain ) )
+	Brakes (
+		Coupling (
+			Type ( Air )
+		)
+	)
+)
+
+""",
+            new WriterOptions{ Inline = ["/Wagon/Coupling"] }
+        };
+
+        yield return new object[]
+        {
+"""
+Curve ( NumColumns ( 2 ) Table ( 1 2 3 4 ) )
+""",
+"""
+Curve (
+	NumColumns ( 2 )
+	Table (
+		1 2
+		3 4
+	)
+)
+
+""",
+            new WriterOptions{ Table = { new WriterOptions.TableConfig { Name = "/curve/table", Columns = "../numcolumns/[1]" } } }
+        };
     }
 
     IEnumerator IEnumerable.GetEnumerator()
