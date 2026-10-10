@@ -164,18 +164,38 @@ public class SimisNode(string? value = null)
         public bool IsQuoted { get; set; }
 
         /// <summary>
-        /// Returns the node value optionally wrapped in quotes based on <paramref name="preserveQoutes"/> and whether the value contains whitespace.
+        /// Returns the node value wrapped in quotes when <paramref name="preserveQuotes"/> is true and the value was quoted,
+        /// or when the value cannot be written without quotes (see <see cref="RequiresQuotes"/>).
         /// </summary>
         /// <param name="value">The raw node value.</param>
-        /// <param name="preserveQoutes">When true, respect the original quoting state.</param>
+        /// <param name="preserveQuotes">When true, respect the original quoting state.</param>
         /// <returns>Value wrapped with quotes if necessary, otherwise the original value, or empty string for null.</returns>
-        public string GetQuotedValue(string? value, bool preserveQoutes)
+        public string GetQuotedValue(string? value, bool preserveQuotes)
         {
             if (value is null)
             {
                 return string.Empty;
             }
-            return (preserveQoutes && IsQuoted) || value.Contains(' ') ? $"\"{value}\"" : value;
+            return (preserveQuotes && IsQuoted) || RequiresQuotes(value) ? $"\"{value}\"" : value;
+        }
+
+        /// <summary>
+        /// Returns true when <paramref name="value"/> would not be read back as the same single token without quotes:
+        /// it is empty, or it contains whitespace, a parenthesis or a double quote.
+        /// </summary>
+        /// <param name="value">The raw node value.</param>
+        public static bool RequiresQuotes(string value)
+        {
+            if (value.Length == 0)
+                return true;
+
+            foreach (char c in value)
+            {
+                if (char.IsWhiteSpace(c) || c is '(' or ')' or '"')
+                    return true;
+            }
+
+            return false;
         }
     }
 }
