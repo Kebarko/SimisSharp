@@ -24,6 +24,7 @@ internal class Parser : IParser
             {
                 // The comment content stays verbatim, even when it looks like a quoted string or a newline token.
                 node = new(token);
+                node.Formatting.IsVerbatim = true;
                 parent.AddNode(node);
                 isCommentBody = false;
                 continue;

@@ -1,5 +1,6 @@
 ﻿using KE.MSTS.SimisSharp.IO;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace KE.MSTS.SimisSharp;
 
@@ -12,9 +13,18 @@ public class SimisNode(string? value = null)
     private readonly IList<SimisNode> subnodes = [];
 
     /// <summary>
-    /// The value of the node. Null for dummy nodes (including the root and empty placeholders).
+    /// The value of the node: a token, a block name, or the verbatim content of a comment block.
+    /// Null for dummy nodes (including the root and empty placeholders).
+    /// The value is raw text, so escape sequences in quoted values, such as <c>\"</c>, are kept as written.
+    /// Renaming a block can turn it into a comment block or back (see <see cref="IsComment"/>).
     /// </summary>
-    public string? Value { get; } = value;
+    /// <exception cref="ArgumentNullException">When setting null.</exception>
+    [DisallowNull]
+    public string? Value
+    {
+        get;
+        set => field = value ?? throw new ArgumentNullException(nameof(value));
+    } = value;
 
     /// <summary>
     /// Parent node; null for the document root.
@@ -45,7 +55,8 @@ public class SimisNode(string? value = null)
     /// True when the node is a comment block, which MSTS and Open Rails ignore.
     /// A comment block is named <c>comment</c> or <c>skip</c> in any letter case, or has a name that begins with <c>#</c> or <c>_</c>.
     /// The name must not be quoted and the node must have child nodes, so a leaf such as <c>skip</c> is an ordinary value.
-    /// A parsed comment block keeps its content verbatim in a single child node.
+    /// A parsed comment block keeps its content in a single child node marked <see cref="SimisNodeFormatting.IsVerbatim"/>.
+    /// Renaming a parsed comment block keeps that content verbatim, so its structure is available after the written text is parsed again.
     /// </summary>
     public bool IsComment => !IsLeaf && Value != null && !Formatting.IsQuoted && TokenConfiguration.IsCommentToken(Value);
 
@@ -140,7 +151,7 @@ public class SimisNode(string? value = null)
     /// <summary>
     /// Holds formatting metadata for a <see cref="SimisNode"/> such as quoting and blank line counts.
     /// </summary>
-    [DebuggerDisplay("OnSameLine={IsOnSameLineAsPrevious}, Lead={LeadingEmptyLines}, Trail={TrailingEmptyLines}, Quoted={IsQuoted}")]
+    [DebuggerDisplay("OnSameLine={IsOnSameLineAsPrevious}, Lead={LeadingEmptyLines}, Trail={TrailingEmptyLines}, Quoted={IsQuoted}, Verbatim={IsVerbatim}")]
     public sealed class SimisNodeFormatting()
     {
         /// <summary>
@@ -162,6 +173,12 @@ public class SimisNode(string? value = null)
         /// True when the node value was originally quoted in the input.
         /// </summary>
         public bool IsQuoted { get; set; }
+
+        /// <summary>
+        /// True when the value is written exactly as it is, without quotes and without a separating space.
+        /// The parser sets it on the content of a comment block. A verbatim value must keep its parentheses balanced, or the written text will not parse.
+        /// </summary>
+        public bool IsVerbatim { get; set; }
 
         /// <summary>
         /// Returns the node value wrapped in quotes when <paramref name="preserveQuotes"/> is true and the value was quoted,

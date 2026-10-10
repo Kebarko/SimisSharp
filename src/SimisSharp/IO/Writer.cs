@@ -72,7 +72,7 @@ internal class Writer : IWriter
             IList<SimisNode> subnodes = node.GetNodes(n => !n.IsDummyLeaf && (!n.IsComment || options.PreserveComments));
 
             bool closeAtNextLine = false;
-            bool insideComment = false;
+            bool lastIsVerbatim = false;
             TableConfig? tableConfig = options.Table.FirstOrDefault(t => SimisPathService.IsMatchForPath(node, t.Name, options.IgnoreCase));
             int totalColumns = 0;
             int currentColumn = 0;
@@ -94,8 +94,8 @@ internal class Writer : IWriter
 
                 if (subnode.IsLeaf)
                 {
-                    insideComment = subnode.Parent?.IsComment == true;
-                    if (insideComment)
+                    lastIsVerbatim = subnode.Formatting.IsVerbatim;
+                    if (lastIsVerbatim)
                     {
                         sb.Append(subnode.Value);
                     }
@@ -154,7 +154,7 @@ internal class Writer : IWriter
                 sb.AppendLine();
                 sb.Append(indent);
             }
-            else if (!insideComment)
+            else if (!lastIsVerbatim)
             {
                 sb.Append(' ');
             }
