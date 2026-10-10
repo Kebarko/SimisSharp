@@ -1,0 +1,212 @@
+﻿using System.Globalization;
+
+namespace KE.MSTS.SimisSharp;
+
+/// <summary>
+/// Parses and formats Simis values the way Open Rails reads them, independent of the current culture.
+/// Numbers use a decimal point and may carry a unit suffix such as <c>10t</c> or <c>1.2kN</c>,
+/// hexadecimal numbers have no prefix, and booleans are <c>true</c>, <c>false</c> or an integer.
+/// Units are returned as written. Converting between units is left to the caller.
+/// </summary>
+public static class SimisValue
+{
+    private const NumberStyles NumberStyle = NumberStyles.AllowLeadingWhite | NumberStyles.AllowLeadingSign | NumberStyles.AllowThousands
+        | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent | NumberStyles.AllowTrailingWhite;
+
+    private const NumberStyles HexStyle = NumberStyles.AllowLeadingWhite | NumberStyles.AllowHexSpecifier | NumberStyles.AllowTrailingWhite;
+
+    /// <summary>
+    /// Parses a number without a unit, such as <c>1.5</c> or <c>-2e3</c>. A trailing comma is ignored, as Open Rails does.
+    /// </summary>
+    /// <returns>True when <paramref name="text"/> is a number.</returns>
+    public static bool TryParseDouble(string? text, out double value)
+    {
+        return TryParseDouble(text.AsSpan(), out value);
+    }
+
+    /// <summary>
+    /// Parses a number with an optional unit suffix, such as <c>10t</c>, <c>1.2kN</c> or <c>-3.5e2m</c>.
+    /// Spaces between the number and the unit are skipped, and a <c>#</c> in the unit starts a comment, so <c>220kN#est</c> has the unit <c>kN</c>.
+    /// </summary>
+    /// <param name="text">Text to parse.</param>
+    /// <param name="value">The number.</param>
+    /// <param name="unit">The unit as written, or an empty string when there is none. Open Rails compares units case-insensitively.</param>
+    /// <returns>True when <paramref name="text"/> starts with a number.</returns>
+    public static bool TryParseNumber(string? text, out double value, out string unit)
+    {
+        unit = string.Empty;
+
+        ReadOnlySpan<char> span = text.AsSpan();
+        int numberLength = GetNumberLength(span);
+
+        if (!TryParseDouble(span[..numberLength], out value))
+            return false;
+
+        ReadOnlySpan<char> suffix = span[numberLength..].TrimStart(' ');
+        int commentStart = suffix.IndexOf('#');
+        if (commentStart >= 0)
+            suffix = suffix[..commentStart];
+
+        unit = suffix.Trim().ToString();
+        return true;
+    }
+
+    /// <summary>
+    /// Parses a signed 32-bit integer, such as <c>-7</c>. A trailing comma is ignored, as Open Rails does.
+    /// </summary>
+    /// <returns>True when <paramref name="text"/> is an integer in range.</returns>
+    public static bool TryParseInt32(string? text, out int value)
+    {
+        return int.TryParse(text.AsSpan().TrimEnd(','), NumberStyle, NumberFormatInfo.InvariantInfo, out value);
+    }
+
+    /// <summary>
+    /// Parses an unsigned 32-bit integer, such as <c>4294967295</c>. A trailing comma is ignored, as Open Rails does.
+    /// </summary>
+    /// <returns>True when <paramref name="text"/> is an unsigned integer in range.</returns>
+    public static bool TryParseUInt32(string? text, out uint value)
+    {
+        return uint.TryParse(text.AsSpan().TrimEnd(','), NumberStyle, NumberFormatInfo.InvariantInfo, out value);
+    }
+
+    /// <summary>
+    /// Parses a hexadecimal number without a prefix, such as <c>ff00ff00</c>.
+    /// </summary>
+    /// <returns>True when <paramref name="text"/> is a hexadecimal number in range.</returns>
+    public static bool TryParseHex(string? text, out uint value)
+    {
+        return uint.TryParse(text, HexStyle, NumberFormatInfo.InvariantInfo, out value);
+    }
+
+    /// <summary>
+    /// Parses a boolean: <c>true</c> or <c>false</c> in any letter case, or an integer where any value other than zero is true.
+    /// </summary>
+    /// <returns>True when <paramref name="text"/> is a boolean.</returns>
+    public static bool TryParseBoolean(string? text, out bool value)
+    {
+        if (string.Equals(text, "true", StringComparison.OrdinalIgnoreCase))
+        {
+            value = true;
+            return true;
+        }
+
+        if (string.Equals(text, "false", StringComparison.OrdinalIgnoreCase))
+        {
+            value = false;
+            return true;
+        }
+
+        bool parsed = int.TryParse(text, NumberStyles.Any, NumberFormatInfo.InvariantInfo, out int number);
+        value = parsed && number != 0;
+        return parsed;
+    }
+
+    /// <summary>
+    /// Formats a number with an optional unit, such as <c>12.5t</c>, using the shortest text that reads back as the same number.
+    /// Numbers below 1e-5 or from 1e15 in magnitude are written with an exponent.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">When <paramref name="value"/> is not finite.</exception>
+    /// <exception cref="ArgumentException">When <paramref name="unit"/> would not be read back as the same unit.</exception>
+    public static string Format(double value, string? unit = null)
+    {
+        if (!double.IsFinite(value))
+            throw new ArgumentOutOfRangeException(nameof(value), value, "Only finite numbers can be written.");
+
+        return AppendUnit(value.ToString(CultureInfo.InvariantCulture), unit);
+    }
+
+    /// <summary>
+    /// Formats a single precision number with an optional unit, using the shortest text that reads back as the same number.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">When <paramref name="value"/> is not finite.</exception>
+    /// <exception cref="ArgumentException">When <paramref name="unit"/> would not be read back as the same unit.</exception>
+    public static string Format(float value, string? unit = null)
+    {
+        if (!float.IsFinite(value))
+            throw new ArgumentOutOfRangeException(nameof(value), value, "Only finite numbers can be written.");
+
+        return AppendUnit(value.ToString(CultureInfo.InvariantCulture), unit);
+    }
+
+    /// <summary>
+    /// Formats an integer with an optional unit, such as <c>42</c> or <c>800kW</c>.
+    /// </summary>
+    /// <exception cref="ArgumentException">When <paramref name="unit"/> would not be read back as the same unit.</exception>
+    public static string Format(long value, string? unit = null)
+    {
+        return AppendUnit(value.ToString(CultureInfo.InvariantCulture), unit);
+    }
+
+    /// <summary>
+    /// Formats a hexadecimal number without a prefix, in lower case, padded with zeros to <paramref name="digits"/> digits.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">When <paramref name="digits"/> is negative.</exception>
+    public static string FormatHex(uint value, int digits = 8)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(digits);
+
+        return value.ToString("x" + digits.ToString(CultureInfo.InvariantCulture), CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>
+    /// Parses a number without a unit, ignoring a trailing comma.
+    /// </summary>
+    private static bool TryParseDouble(ReadOnlySpan<char> text, out double value)
+    {
+        return double.TryParse(text.TrimEnd(','), NumberStyle, NumberFormatInfo.InvariantInfo, out value);
+    }
+
+    /// <summary>
+    /// Appends <paramref name="unit"/> to a formatted number after checking that it reads back as the same unit.
+    /// </summary>
+    private static string AppendUnit(string number, string? unit)
+    {
+        if (string.IsNullOrEmpty(unit))
+            return number;
+
+        string result = number + unit;
+        if (!TryParseNumber(result, out _, out string parsedUnit) || parsedUnit != unit)
+            throw new ArgumentException($"The unit '{unit}' cannot be written after a number.", nameof(unit));
+
+        return result;
+    }
+
+    /// <summary>
+    /// Returns the length of the number at the start of <paramref name="text"/>, using the same rules as Open Rails:
+    /// an optional sign, then digits, decimal points, commas and an exponent.
+    /// </summary>
+    private static int GetNumberLength(ReadOnlySpan<char> text)
+    {
+        int i = 0;
+        for (; i < text.Length; i++)
+        {
+            char c = text[i];
+
+            if (i == 0 && (c is '+' or '-'))
+                continue;
+
+            if (c is '.' or ',')
+                continue;
+
+            if ((c is 'e' or 'E') && i < text.Length - 1)
+            {
+                char next = text[i + 1];
+                if (next is '+' or '-')
+                {
+                    i++;
+                    continue;
+                }
+
+                if (char.IsAsciiDigit(next))
+                    continue;
+
+                break;
+            }
+
+            if (!char.IsAsciiDigit(c))
+                break;
+        }
+
+        return i;
+    }
+}
