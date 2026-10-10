@@ -103,9 +103,14 @@ public class SimisNode(string? value = null)
     /// </summary>
     public void RemoveNode(string value, StringComparison comparisonType = StringComparison.Ordinal)
     {
-        foreach (SimisNode subnode in subnodes.Where(c => string.Equals(c.Value, value, comparisonType)))
+        for (int i = subnodes.Count - 1; i >= 0; i--)
         {
-            RemoveNode(subnode);
+            SimisNode subnode = subnodes[i];
+            if (string.Equals(subnode.Value, value, comparisonType))
+            {
+                subnodes.RemoveAt(i);
+                subnode.Parent = null;
+            }
         }
     }
 
