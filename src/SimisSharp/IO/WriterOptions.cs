@@ -24,7 +24,7 @@ public class WriterOptions
     public bool PreserveQuotes { get; set; } = true;
 
     /// <summary>
-    /// When true, writer preserves comment nodes when writing.
+    /// When true, writer preserves comment blocks (see <see cref="SimisNode.IsComment"/>) when writing.
     /// Default is true.
     /// </summary>
     public bool PreserveComments { get; set; } = true;

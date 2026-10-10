@@ -7,6 +7,7 @@ internal class Parser : IParser
 {
     /// <summary>
     /// Parse the provided tokens into a document tree. Handles node quoting and leading/trailing empty line counts.
+    /// The content of a comment block is kept verbatim as a single child node.
     /// </summary>
     public SimisDocument Parse(IEnumerable<string> tokens)
     {
@@ -14,13 +15,28 @@ internal class Parser : IParser
         SimisNode parent = document.Root;
         SimisNode node = document.Root;
         byte newLines = 0;
+        bool isCommentHead = false;
+        bool isCommentBody = false;
 
         foreach (string token in tokens)
         {
+            if (isCommentBody && token is not ")")
+            {
+                // The comment content stays verbatim, even when it looks like a quoted string or a newline token.
+                node = new(token);
+                parent.AddNode(node);
+                isCommentBody = false;
+                continue;
+            }
+
+            isCommentBody = false;
+
             if (token is "(")
             {
                 parent = node;
                 newLines = 0;
+                isCommentBody = isCommentHead;
+                isCommentHead = false;
             }
             else if (token is ")")
             {
@@ -32,6 +48,7 @@ internal class Parser : IParser
 
                 parent = parent.Parent ?? document.Root;
                 newLines = 0;
+                isCommentHead = false;
             }
             else if (token == Environment.NewLine)
             {
@@ -49,6 +66,7 @@ internal class Parser : IParser
                     node = new(token);
                 }
 
+                isCommentHead = TokenConfiguration.IsCommentToken(token);
                 node.Formatting.IsOnSameLineAsPrevious = !parent.IsLeaf && newLines == 0;
 
                 if (newLines > 1)

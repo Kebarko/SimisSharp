@@ -42,9 +42,12 @@ public class SimisNode(string? value = null)
     public bool IsDummyRoot => Parent == null && Value == null;
 
     /// <summary>
-    /// True when the node value matches a configured comment token.
+    /// True when the node is a comment block, which MSTS and Open Rails ignore.
+    /// A comment block is named <c>comment</c> or <c>skip</c> in any letter case, or has a name that begins with <c>#</c> or <c>_</c>.
+    /// The name must not be quoted and the node must have child nodes, so a leaf such as <c>skip</c> is an ordinary value.
+    /// A parsed comment block keeps its content verbatim in a single child node.
     /// </summary>
-    public bool IsComment => Value != null && TokenConfiguration.CommentTokens.Contains(Value);
+    public bool IsComment => !IsLeaf && Value != null && !Formatting.IsQuoted && TokenConfiguration.IsCommentToken(Value);
 
     /// <summary>
     /// Returns a shallow copy list of child nodes.

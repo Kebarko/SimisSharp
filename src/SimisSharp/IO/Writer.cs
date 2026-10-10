@@ -48,12 +48,14 @@ internal class Writer : IWriter
     {
         string indent = new(options.IndentCharacter, level * options.IndentSize);
 
-        if (sb.Length > 0 && level == 0)
+        bool isCommentOnSameLine = node.IsComment && options.PreserveCommentPosition && node.Formatting.IsOnSameLineAsPrevious;
+
+        if (sb.Length > 0 && level == 0 && !isCommentOnSameLine)
             sb.AppendLine();
 
         WriteEmptyLines(sb, options.PreserveEmptyLines, node.Formatting.LeadingEmptyLines, options.CollapseEmptyLines);
 
-        if (inline || (node.IsComment && options.PreserveCommentPosition && node.Formatting.IsOnSameLineAsPrevious))
+        if (inline || isCommentOnSameLine)
             sb.Append(' ');
         else
             sb.Append(indent);
