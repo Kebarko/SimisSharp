@@ -1,4 +1,5 @@
 ﻿using KE.MSTS.SimisSharp.IO;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
@@ -10,7 +11,8 @@ namespace KE.MSTS.SimisSharp;
 /// </summary>
 public class SimisNode(string? value = null)
 {
-    private readonly IList<SimisNode> subnodes = [];
+    private readonly List<SimisNode> subnodes = [];
+    private ReadOnlyCollection<SimisNode>? nodesView;
 
     /// <summary>
     /// The value of the node: a token, a block name, or the verbatim content of a comment block.
@@ -61,6 +63,20 @@ public class SimisNode(string? value = null)
     public bool IsComment => !IsLeaf && Value != null && !Formatting.IsQuoted && TokenConfiguration.IsCommentToken(Value);
 
     /// <summary>
+    /// Child nodes in document order, as a read-only view that reflects later changes.
+    /// Use <see cref="GetNodes()"/> for a copy that is safe to keep while the children change.
+    /// </summary>
+    public IReadOnlyList<SimisNode> Nodes => nodesView ??= subnodes.AsReadOnly();
+
+    /// <summary>
+    /// Returns the index of <paramref name="subnode"/> among the child nodes, or -1 when it is not a child of this node.
+    /// </summary>
+    public int IndexOf(SimisNode subnode)
+    {
+        return subnodes.IndexOf(subnode);
+    }
+
+    /// <summary>
     /// Returns a shallow copy list of child nodes.
     /// </summary>
     public IList<SimisNode> GetNodes()
@@ -93,20 +109,81 @@ public class SimisNode(string? value = null)
     }
 
     /// <summary>
-    /// Adds a new leaf child with the specified <paramref name="value"/>.
+    /// Adds a new child with the specified <paramref name="value"/> after the existing child nodes.
     /// </summary>
-    public void AddNode(string value)
+    /// <returns>The new child node.</returns>
+    public SimisNode AddNode(string value)
     {
-        AddNode(new SimisNode(value));
+        return AddNode(new SimisNode(value));
     }
 
     /// <summary>
-    /// Adds the given <paramref name="subnode"/> as a child and sets its parent reference.
+    /// Adds the given <paramref name="subnode"/> after the existing child nodes and sets its parent reference.
+    /// A node that already has a parent is moved: it is removed from its current parent first.
     /// </summary>
-    public void AddNode(SimisNode subnode)
+    /// <returns>The added node.</returns>
+    /// <exception cref="ArgumentNullException">When <paramref name="subnode"/> is null.</exception>
+    /// <exception cref="InvalidOperationException">When <paramref name="subnode"/> is this node or one of its ancestors.</exception>
+    public SimisNode AddNode(SimisNode subnode)
     {
-        subnode.Parent = this;
+        Attach(subnode);
         subnodes.Add(subnode);
+        return subnode;
+    }
+
+    /// <summary>
+    /// Inserts a new child with the specified <paramref name="value"/> at <paramref name="index"/>.
+    /// </summary>
+    /// <returns>The new child node.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">When <paramref name="index"/> is negative or greater than the number of child nodes.</exception>
+    public SimisNode InsertNode(int index, string value)
+    {
+        return InsertNode(index, new SimisNode(value));
+    }
+
+    /// <summary>
+    /// Inserts the given <paramref name="subnode"/> at <paramref name="index"/> and sets its parent reference.
+    /// A node that already has a parent is moved: it is removed from its current parent first.
+    /// When it is already a child of this node, <paramref name="index"/> refers to the child nodes without it.
+    /// </summary>
+    /// <returns>The inserted node.</returns>
+    /// <exception cref="ArgumentNullException">When <paramref name="subnode"/> is null.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">When <paramref name="index"/> is negative or greater than the number of child nodes.</exception>
+    /// <exception cref="InvalidOperationException">When <paramref name="subnode"/> is this node or one of its ancestors.</exception>
+    public SimisNode InsertNode(int index, SimisNode subnode)
+    {
+        ArgumentNullException.ThrowIfNull(subnode);
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(index, ReferenceEquals(subnode.Parent, this) ? subnodes.Count - 1 : subnodes.Count);
+
+        Attach(subnode);
+        subnodes.Insert(index, subnode);
+        return subnode;
+    }
+
+    /// <summary>
+    /// Replaces the child <paramref name="oldNode"/> with <paramref name="newNode"/> at the same position.
+    /// The old node loses its parent reference. A new node that already has a parent is moved: it is removed from its current parent first.
+    /// </summary>
+    /// <returns>The new node.</returns>
+    /// <exception cref="ArgumentNullException">When <paramref name="oldNode"/> or <paramref name="newNode"/> is null.</exception>
+    /// <exception cref="ArgumentException">When <paramref name="oldNode"/> is not a child of this node.</exception>
+    /// <exception cref="InvalidOperationException">When <paramref name="newNode"/> is this node or one of its ancestors.</exception>
+    public SimisNode ReplaceNode(SimisNode oldNode, SimisNode newNode)
+    {
+        ArgumentNullException.ThrowIfNull(oldNode);
+        ArgumentNullException.ThrowIfNull(newNode);
+
+        if (!ReferenceEquals(oldNode.Parent, this))
+            throw new ArgumentException("The node to replace is not a child of this node.", nameof(oldNode));
+
+        if (ReferenceEquals(oldNode, newNode))
+            return newNode;
+
+        Attach(newNode);
+        subnodes[subnodes.IndexOf(oldNode)] = newNode;
+        oldNode.Parent = null;
+        return newNode;
     }
 
     /// <summary>
@@ -146,6 +223,26 @@ public class SimisNode(string? value = null)
             subnode.Parent = null;
         }
         subnodes.Clear();
+    }
+
+    /// <summary>
+    /// Detaches <paramref name="subnode"/> from its current parent and makes this node its parent.
+    /// The caller adds it to the child nodes.
+    /// </summary>
+    /// <exception cref="ArgumentNullException">When <paramref name="subnode"/> is null.</exception>
+    /// <exception cref="InvalidOperationException">When <paramref name="subnode"/> is this node or one of its ancestors.</exception>
+    private void Attach(SimisNode subnode)
+    {
+        ArgumentNullException.ThrowIfNull(subnode);
+
+        for (SimisNode? ancestor = this; ancestor != null; ancestor = ancestor.Parent)
+        {
+            if (ReferenceEquals(ancestor, subnode))
+                throw new InvalidOperationException("A node cannot be added to itself or to one of its descendants.");
+        }
+
+        subnode.Parent?.RemoveNode(subnode);
+        subnode.Parent = this;
     }
 
     /// <summary>
