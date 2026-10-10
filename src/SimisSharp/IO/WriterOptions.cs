@@ -60,6 +60,7 @@ public class WriterOptions
 
     /// <summary>
     /// Configuration for special-cased "table" style nodes where columns are aligned.
+    /// When several configurations match a node, the first one in the list is used.
     /// Default is empty list.
     /// </summary>
     public List<TableConfig> Table { get; set; } = [];

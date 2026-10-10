@@ -931,6 +931,21 @@ Tr_SMS (
 """,
             new WriterOptions{ Table = { new WriterOptions.TableConfig { Name= "CurvePoints", Columns = "2", ColumnSeparator = " ", Offset = 1, FixedWidth = true } } }
         };
+
+        yield return new object[]
+        {
+"""
+Table ( 1 2 3 4 )
+""",
+"""
+Table (
+	1 2
+	3 4
+)
+
+""",
+            new WriterOptions{ Table = { new WriterOptions.TableConfig { Name = "Table", Columns = "2" }, new WriterOptions.TableConfig { Name = "*", Columns = "4" } } }
+        };
     }
 
     IEnumerator IEnumerable.GetEnumerator()

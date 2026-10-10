@@ -73,7 +73,7 @@ internal class Writer : IWriter
 
             bool closeAtNextLine = false;
             bool insideComment = false;
-            TableConfig? tableConfig = options.Table.SingleOrDefault(t => SimisPathService.IsMatchForPath(node, t.Name, options.IgnoreCase));
+            TableConfig? tableConfig = options.Table.FirstOrDefault(t => SimisPathService.IsMatchForPath(node, t.Name, options.IgnoreCase));
             int totalColumns = 0;
             int currentColumn = 0;
             int[] columnWidths = [];
