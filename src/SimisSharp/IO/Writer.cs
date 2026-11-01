@@ -31,9 +31,10 @@ internal class Writer : IWriter
     /// </summary>
     private static void WriteRootNode(StringBuilder sb, SimisNode node, WriterOptions options)
     {
-        foreach (SimisNode subnode in node.GetNodes(n => !n.IsDummyLeaf && (!n.IsComment || options.PreserveComments)))
+        IList<SimisNode> subnodes = node.GetNodes(n => !n.IsDummyLeaf && (!n.IsComment || options.PreserveComments));
+        for (int i = 0; i < subnodes.Count; i++)
         {
-            WriteNode(sb, subnode, options, 0, false);
+            WriteNode(sb, subnodes[i], options, 0, false, KeepQuotes(subnodes, i, options.PreserveQuotes));
         }
     }
 
@@ -45,7 +46,8 @@ internal class Writer : IWriter
     /// <param name="options">Writer options controlling formatting.</param>
     /// <param name="level">Current indent level.</param>
     /// <param name="inline">Whether this node should be written inline with its parent.</param>
-    private static void WriteNode(StringBuilder sb, SimisNode node, WriterOptions options, int level, bool inline)
+    /// <param name="preserveQuotes">Whether the node value keeps its quotes (see <see cref="KeepQuotes"/>).</param>
+    private static void WriteNode(StringBuilder sb, SimisNode node, WriterOptions options, int level, bool inline, bool preserveQuotes)
     {
         string indent = new(options.IndentCharacter, level * options.IndentSize);
 
@@ -61,7 +63,7 @@ internal class Writer : IWriter
         else
             sb.Append(indent);
 
-        sb.Append(FormatValue(node, options.PreserveQuotes));
+        sb.Append(FormatValue(node, preserveQuotes));
 
         if (!inline && options.Inline.Any(path => SimisPathService.IsMatchForPath(node, path, options.IgnoreCase)))
         {
@@ -92,6 +94,7 @@ internal class Writer : IWriter
             for (int i = 0; i < subnodes.Count; i++)
             {
                 SimisNode subnode = subnodes[i];
+                bool keepQuotes = KeepQuotes(subnodes, i, options.PreserveQuotes);
 
                 if (subnode.IsLeaf)
                 {
@@ -115,7 +118,7 @@ internal class Writer : IWriter
                                 sb.Append(tableConfig.ColumnSeparator);
                             }
 
-                            string value = FormatValue(subnode, options.PreserveQuotes);
+                            string value = FormatValue(subnode, keepQuotes);
                             if (columnWidths.Length > currentColumn && value.Length < columnWidths[currentColumn])
                             {
                                 value = value.PadLeft(columnWidths[currentColumn]);
@@ -134,7 +137,7 @@ internal class Writer : IWriter
                         else
                         {
                             sb.Append(' ');
-                            sb.Append(FormatValue(subnode, options.PreserveQuotes));
+                            sb.Append(FormatValue(subnode, keepQuotes));
                         }
                     }
                 }
@@ -146,7 +149,7 @@ internal class Writer : IWriter
                         sb.AppendLine(); 
                     }
 
-                    WriteNode(sb, subnode, options, level + 1, inline);
+                    WriteNode(sb, subnode, options, level + 1, inline, keepQuotes);
                 }
             }
 
@@ -197,7 +200,7 @@ internal class Writer : IWriter
         {
             for (int nodeIdx = colIdx + offset; nodeIdx < nodes.Count; nodeIdx += totalColumns)
             {
-                string value = FormatValue(nodes[nodeIdx], preserveQuotes);
+                string value = FormatValue(nodes[nodeIdx], KeepQuotes(nodes, nodeIdx, preserveQuotes));
 
                 if (value.Length > result[colIdx])
                     result[colIdx] = value.Length;
@@ -205,6 +208,37 @@ internal class Writer : IWriter
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// Returns whether the node at <paramref name="index"/> keeps its quotes: always when <paramref name="preserveQuotes"/> is true,
+    /// and otherwise when dropping them would change the meaning. A quoted value next to a <c>+</c> is part of a concatenated string,
+    /// a quoted <c>+</c> would become the concatenation operator, and a quoted block name that is a comment token would make the block a comment.
+    /// </summary>
+    private static bool KeepQuotes(IList<SimisNode> nodes, int index, bool preserveQuotes)
+    {
+        if (preserveQuotes)
+            return true;
+
+        SimisNode node = nodes[index];
+        if (!node.Formatting.IsQuoted || node.Value is null)
+            return false;
+
+        if (node.Value == "+")
+            return true;
+
+        if (!node.IsLeaf && TokenConfiguration.IsCommentToken(node.Value))
+            return true;
+
+        return IsConcatenationOperator(nodes, index - 1) || IsConcatenationOperator(nodes, index + 1);
+    }
+
+    /// <summary>
+    /// Returns true when the node at <paramref name="index"/> is an unquoted <c>+</c> value, which joins the quoted strings around it.
+    /// </summary>
+    private static bool IsConcatenationOperator(IList<SimisNode> nodes, int index)
+    {
+        return index >= 0 && index < nodes.Count && nodes[index] is { IsLeaf: true, Value: "+" } node && !node.Formatting.IsQuoted;
     }
 
     /// <summary>
