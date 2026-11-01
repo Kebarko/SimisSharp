@@ -71,4 +71,37 @@ public class SimisNodeTest
         Assert.Equal(1, count);
         Assert.Equal(["mass"], wagon.Nodes.Select(n => n.Value));
     }
+
+    [Fact]
+    public void FormattingIsAViewOfTheNode()
+    {
+        // Arrange
+        SimisNode value = new SimisProcessor().Parse("A ( \"b\" )").Root.Nodes[0].Nodes[0];
+        SimisNode.SimisNodeFormatting formatting = value.Formatting;
+
+        // Act
+        formatting.IsQuoted = false;
+        formatting.LeadingEmptyLines = 2;
+
+        // Assert
+        Assert.False(value.Formatting.IsQuoted);
+        Assert.Equal(2, value.Formatting.LeadingEmptyLines);
+    }
+
+    [Fact]
+    public void NodesOfLeafShowsLaterChildren()
+    {
+        // Arrange
+        SimisNode node = new("A");
+        IReadOnlyList<SimisNode> nodes = node.Nodes;
+        bool wasLeaf = node.IsLeaf;
+
+        // Act
+        node.AddNode("1");
+
+        // Assert
+        Assert.True(wasLeaf);
+        Assert.False(node.IsLeaf);
+        Assert.Equal(["1"], nodes.Select(n => n.Value));
+    }
 }

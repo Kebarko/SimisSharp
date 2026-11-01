@@ -1,4 +1,6 @@
-﻿namespace KE.MSTS.SimisSharp.IO;
+﻿using System.Buffers;
+
+namespace KE.MSTS.SimisSharp.IO;
 
 /// <summary>
 /// Holds token configuration used by the reader, parser and writer.
@@ -9,6 +11,16 @@ internal static class TokenConfiguration
     /// Keywords that start a comment block. They are compared case-insensitively.
     /// </summary>
     private static readonly string[] CommentKeywords = ["comment", "skip"];
+
+    /// <summary>
+    /// Characters that end an unquoted value: every character <see cref="char.IsWhiteSpace(char)"/> accepts, both parentheses and the double quote.
+    /// </summary>
+    public static readonly SearchValues<char> ValueEnds = SearchValues.Create([.. WhiteSpace(), '(', ')', '"']);
+
+    /// <summary>
+    /// Characters that a value must be quoted for: those that end an unquoted value, and the backslash, which starts an escape sequence.
+    /// </summary>
+    public static readonly SearchValues<char> CharactersRequiringQuotes = SearchValues.Create([.. WhiteSpace(), '(', ')', '"', '\\']);
 
     /// <summary>
     /// Determines whether <paramref name="token"/> starts a comment block when a block follows it.
@@ -32,5 +44,17 @@ internal static class TokenConfiguration
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// Returns every character <see cref="char.IsWhiteSpace(char)"/> accepts.
+    /// </summary>
+    private static IEnumerable<char> WhiteSpace()
+    {
+        for (int c = char.MinValue; c <= char.MaxValue; c++)
+        {
+            if (char.IsWhiteSpace((char)c))
+                yield return (char)c;
+        }
     }
 }

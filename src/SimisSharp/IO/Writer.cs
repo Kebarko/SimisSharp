@@ -51,12 +51,12 @@ internal static class Writer
     {
         string indent = new(options.IndentCharacter, level * options.IndentSize);
 
-        bool isCommentOnSameLine = node.IsComment && options.PreserveCommentPosition && node.Formatting.IsOnSameLineAsPrevious;
+        bool isCommentOnSameLine = node.IsComment && options.PreserveCommentPosition && node.IsOnSameLineAsPrevious;
 
         if (sb.Length > 0 && level == 0 && !isCommentOnSameLine)
             sb.AppendLine();
 
-        WriteEmptyLines(sb, options.PreserveEmptyLines, node.Formatting.LeadingEmptyLines, options.CollapseEmptyLines);
+        WriteEmptyLines(sb, options.PreserveEmptyLines, node.LeadingEmptyLines, options.CollapseEmptyLines);
 
         if (inline || isCommentOnSameLine)
             sb.Append(' ');
@@ -98,7 +98,7 @@ internal static class Writer
 
                 if (subnode.IsLeaf)
                 {
-                    lastIsVerbatim = subnode.Formatting.IsVerbatim;
+                    lastIsVerbatim = subnode.IsVerbatim;
                     if (lastIsVerbatim)
                     {
                         sb.Append(subnode.Value);
@@ -143,7 +143,7 @@ internal static class Writer
                 }
                 else
                 {
-                    if (!inline && !(subnode.IsComment && options.PreserveCommentPosition && subnode.Formatting.IsOnSameLineAsPrevious))
+                    if (!inline && !(subnode.IsComment && options.PreserveCommentPosition && subnode.IsOnSameLineAsPrevious))
                     {
                         closeAtNextLine = true;
                         sb.AppendLine(); 
@@ -165,7 +165,7 @@ internal static class Writer
             sb.Append(')');
         }
 
-        WriteEmptyLines(sb, options.PreserveEmptyLines, node.Formatting.TrailingEmptyLines, options.CollapseEmptyLines);
+        WriteEmptyLines(sb, options.PreserveEmptyLines, node.TrailingEmptyLines, options.CollapseEmptyLines);
     }
 
     /// <summary>
@@ -221,7 +221,7 @@ internal static class Writer
             return true;
 
         SimisNode node = nodes[index];
-        if (!node.Formatting.IsQuoted || node.Value is null)
+        if (!node.IsQuoted || node.Value is null)
             return false;
 
         if (node.Value == "+")
@@ -238,7 +238,7 @@ internal static class Writer
     /// </summary>
     private static bool IsConcatenationOperator(IList<SimisNode> nodes, int index)
     {
-        return index >= 0 && index < nodes.Count && nodes[index] is { IsLeaf: true, Value: "+" } node && !node.Formatting.IsQuoted;
+        return index >= 0 && index < nodes.Count && nodes[index] is { IsLeaf: true, Value: "+" } node && !node.IsQuoted;
     }
 
     /// <summary>
@@ -251,7 +251,7 @@ internal static class Writer
         if (value is null)
             return string.Empty;
 
-        bool keepQuotes = preserveQuotes && node.Formatting.IsQuoted;
+        bool keepQuotes = preserveQuotes && node.IsQuoted;
         bool quote = keepQuotes || SimisNode.SimisNodeFormatting.RequiresQuotes(value);
 
         string? original = node.OriginalText;

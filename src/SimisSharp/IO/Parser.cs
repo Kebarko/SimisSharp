@@ -40,23 +40,23 @@ internal static class Parser
                     node = AddValue(parent, reader, lineBreaks);
                     if (reader.CommentText.IsEmpty)
                     {
-                        node.AddNode(new SimisNode());
+                        node.AddParsedNode(new SimisNode());
                     }
                     else
                     {
                         // The comment content stays verbatim, even when it looks like quoted strings or blocks.
-                        SimisNode content = new(reader.CommentText.ToString());
-                        content.Formatting.IsVerbatim = true;
-                        node = node.AddNode(content);
+                        SimisNode content = new(reader.CommentText.ToString()) { IsVerbatim = true };
+                        node.AddParsedNode(content);
+                        node = content;
                     }
                     break;
 
                 case SimisTokenType.EndBlock:
                     if (ReferenceEquals(parent, node))
-                        node.AddNode(new SimisNode());
+                        node.AddParsedNode(new SimisNode());
 
                     if (lineBreaks > 1)
-                        node.Parent?.Formatting.TrailingEmptyLines = (byte)(lineBreaks - 1);
+                        node.Parent?.TrailingEmptyLines = (byte)(lineBreaks - 1);
 
                     parent = parent.Parent ?? document.Root;
                     break;
@@ -75,14 +75,27 @@ internal static class Parser
     /// <returns>The new node.</returns>
     private static SimisNode AddValue(SimisNode parent, in SimisReader reader, int lineBreaks)
     {
-        SimisNode node = new(reader.GetString());
-        node.OriginalText = reader.IsQuoted ? string.Concat("\"", reader.ValueSpan, "\"") : node.Value;
-        node.Formatting.IsQuoted = reader.IsQuoted;
-        node.Formatting.IsOnSameLineAsPrevious = !parent.IsLeaf && lineBreaks == 0;
+        string value = reader.GetString();
+        SimisNode node = new(value)
+        {
+            IsQuoted = reader.IsQuoted,
+            IsOnSameLineAsPrevious = !parent.IsLeaf && lineBreaks == 0,
+            LeadingEmptyLines = lineBreaks > 1 ? (byte)(lineBreaks - 1) : (byte)0,
+        };
 
-        if (lineBreaks > 1)
-            node.Formatting.LeadingEmptyLines = (byte)(lineBreaks - 1);
+        // The text as written is kept only where the writer would write the value differently: a quoted value with an escape sequence,
+        // or a line feed or tab that the writer would escape, and an unquoted value with a backslash or an escaped double quote.
+        if (reader.IsQuoted)
+        {
+            if (reader.ValueSpan.ContainsAny('\\', '\n', '\t'))
+                node.OriginalText = string.Concat("\"", reader.ValueSpan, "\"");
+        }
+        else if (SimisNode.SimisNodeFormatting.RequiresQuotes(value))
+        {
+            node.OriginalText = value;
+        }
 
-        return parent.AddNode(node);
+        parent.AddParsedNode(node);
+        return node;
     }
 }

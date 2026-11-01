@@ -5,13 +5,14 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace KE.MSTS.SimisSharp;
 
-[DebuggerDisplay("Value='{Value}' Parent='{Parent?.Value}' Subnodes={subnodes.Count}")]
+[DebuggerDisplay("Value='{Value}' Parent='{Parent?.Value}' Subnodes={subnodes == null ? 0 : subnodes.Count}")]
 /// <summary>
 /// Represents a node in the Simis document tree. Nodes may be leaves (value) or containers (have child nodes). The root node is a dummy node where <see cref="Value"/> is null.
 /// </summary>
 public class SimisNode(string? value = null)
 {
-    private readonly List<SimisNode> subnodes = [];
+    // Created with the first child, so that leaves, most nodes of a tree, have no list.
+    private List<SimisNode>? subnodes;
     private ReadOnlyCollection<SimisNode>? nodesView;
 
     /// <summary>
@@ -51,13 +52,22 @@ public class SimisNode(string? value = null)
 
     /// <summary>
     /// Formatting details for this node (leading/trailing blank lines, quoting, comment position).
+    /// It is a view of the node: changes made through it change the node.
     /// </summary>
-    public SimisNodeFormatting Formatting { get; } = new SimisNodeFormatting();
+    public SimisNodeFormatting Formatting => new(this);
+
+    // The formatting is kept in the node rather than in a separate object, so that parsing creates one object per node.
+    // See SimisNodeFormatting for the meaning of each property.
+    internal bool IsOnSameLineAsPrevious { get; set; }
+    internal byte LeadingEmptyLines { get; set; }
+    internal byte TrailingEmptyLines { get; set; }
+    internal bool IsQuoted { get; set; }
+    internal bool IsVerbatim { get; set; }
 
     /// <summary>
     /// True when node has no child nodes.
     /// </summary>
-    public bool IsLeaf => subnodes.Count == 0;
+    public bool IsLeaf => subnodes is not { Count: > 0 };
 
     /// <summary>
     /// True when node is a leaf and has no value. It is the placeholder child of an empty block, such as <c>Lights ( )</c>,
@@ -68,7 +78,12 @@ public class SimisNode(string? value = null)
     /// <summary>
     /// True when the only child is the placeholder of an empty block.
     /// </summary>
-    private bool HasOnlyPlaceholder => subnodes.Count == 1 && subnodes[0].IsDummyLeaf;
+    private bool HasOnlyPlaceholder => subnodes is { Count: 1 } && subnodes[0].IsDummyLeaf;
+
+    /// <summary>
+    /// The child nodes, creating the list when there is none yet.
+    /// </summary>
+    private List<SimisNode> Subnodes => subnodes ??= [];
 
     /// <summary>
     /// True when node is the dummy root (no parent and no value).
@@ -82,7 +97,7 @@ public class SimisNode(string? value = null)
     /// A parsed comment block keeps its content in a single child node marked <see cref="SimisNodeFormatting.IsVerbatim"/>.
     /// Renaming a parsed comment block keeps that content verbatim, so its structure is available after the written text is parsed again.
     /// </summary>
-    public bool IsComment => !IsLeaf && Value != null && !Formatting.IsQuoted && TokenConfiguration.IsCommentToken(Value);
+    public bool IsComment => !IsLeaf && Value != null && !IsQuoted && TokenConfiguration.IsCommentToken(Value);
 
     /// <summary>
     /// Reads the value as a number without a unit (see <see cref="SimisValue.TryParseDouble"/>).
@@ -138,14 +153,14 @@ public class SimisNode(string? value = null)
     /// Child nodes in document order, as a read-only view that reflects later changes.
     /// Use <see cref="GetNodes()"/> for a copy that is safe to keep while the children change.
     /// </summary>
-    public IReadOnlyList<SimisNode> Nodes => nodesView ??= subnodes.AsReadOnly();
+    public IReadOnlyList<SimisNode> Nodes => nodesView ??= Subnodes.AsReadOnly();
 
     /// <summary>
     /// Returns the index of <paramref name="subnode"/> among the child nodes, or -1 when it is not a child of this node.
     /// </summary>
     public int IndexOf(SimisNode subnode)
     {
-        return subnodes.IndexOf(subnode);
+        return subnodes?.IndexOf(subnode) ?? -1;
     }
 
     /// <summary>
@@ -153,7 +168,7 @@ public class SimisNode(string? value = null)
     /// </summary>
     public IList<SimisNode> GetNodes()
     {
-        return subnodes.ToList();
+        return subnodes is null ? [] : [.. subnodes];
     }
 
     /// <summary>
@@ -161,7 +176,17 @@ public class SimisNode(string? value = null)
     /// </summary>
     public IList<SimisNode> GetNodes(Func<SimisNode, bool> predicate)
     {
-        return subnodes.Where(predicate).ToList();
+        List<SimisNode> result = [];
+        if (subnodes is null)
+            return result;
+
+        foreach (SimisNode subnode in subnodes)
+        {
+            if (predicate(subnode))
+                result.Add(subnode);
+        }
+
+        return result;
     }
 
     /// <summary>
@@ -170,7 +195,7 @@ public class SimisNode(string? value = null)
     /// </summary>
     public IList<SimisNode> GetNodes(string value, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase)
     {
-        return subnodes.Where(c => string.Equals(c.Value, value, comparisonType)).ToList();
+        return GetNodes(c => string.Equals(c.Value, value, comparisonType));
     }
 
     /// <summary>
@@ -179,7 +204,16 @@ public class SimisNode(string? value = null)
     /// </summary>
     public SimisNode? GetNode(string value, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase)
     {
-        return subnodes.FirstOrDefault(c => string.Equals(c.Value, value, comparisonType));
+        if (subnodes is null)
+            return null;
+
+        foreach (SimisNode subnode in subnodes)
+        {
+            if (string.Equals(subnode.Value, value, comparisonType))
+                return subnode;
+        }
+
+        return null;
     }
 
     /// <summary>
@@ -205,8 +239,18 @@ public class SimisNode(string? value = null)
     {
         Attach(subnode);
         RemovePlaceholder(subnode);
-        subnodes.Add(subnode);
+        Subnodes.Add(subnode);
         return subnode;
+    }
+
+    /// <summary>
+    /// Adds a node the parser has just created after the existing child nodes, without the checks of <see cref="AddNode(SimisNode)"/>.
+    /// The parser only adds new nodes that have a value, and the placeholder of an empty block.
+    /// </summary>
+    internal void AddParsedNode(SimisNode subnode)
+    {
+        subnode.Parent = this;
+        Subnodes.Add(subnode);
     }
 
     /// <summary>
@@ -236,12 +280,12 @@ public class SimisNode(string? value = null)
         ArgumentNullException.ThrowIfNull(subnode);
         ArgumentOutOfRangeException.ThrowIfNegative(index);
 
-        int count = HasOnlyPlaceholder ? 0 : subnodes.Count - (ReferenceEquals(subnode.Parent, this) ? 1 : 0);
+        int count = HasOnlyPlaceholder ? 0 : (subnodes?.Count ?? 0) - (ReferenceEquals(subnode.Parent, this) ? 1 : 0);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(index, count);
 
         Attach(subnode);
         RemovePlaceholder(subnode);
-        subnodes.Insert(index, subnode);
+        Subnodes.Insert(index, subnode);
         return subnode;
     }
 
@@ -266,7 +310,7 @@ public class SimisNode(string? value = null)
             return newNode;
 
         Attach(newNode);
-        subnodes[subnodes.IndexOf(oldNode)] = newNode;
+        Subnodes[Subnodes.IndexOf(oldNode)] = newNode;
         oldNode.Parent = null;
         return newNode;
     }
@@ -278,6 +322,9 @@ public class SimisNode(string? value = null)
     /// </summary>
     public void RemoveNode(string value, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase)
     {
+        if (subnodes is null)
+            return;
+
         bool removed = false;
         for (int i = subnodes.Count - 1; i >= 0; i--)
         {
@@ -300,7 +347,7 @@ public class SimisNode(string? value = null)
     /// </summary>
     public void RemoveNode(SimisNode subnode)
     {
-        if (subnodes.Remove(subnode))
+        if (subnodes is not null && subnodes.Remove(subnode))
         {
             subnode.Parent = null;
             AddPlaceholderIfEmpty();
@@ -313,7 +360,7 @@ public class SimisNode(string? value = null)
     /// </summary>
     public void RemoveAllNodes()
     {
-        if (subnodes.Count == 0)
+        if (subnodes is not { Count: > 0 })
             return;
 
         foreach (SimisNode subnode in subnodes)
@@ -329,11 +376,11 @@ public class SimisNode(string? value = null)
     /// </summary>
     private void AddPlaceholderIfEmpty()
     {
-        if (subnodes.Count > 0)
+        if (subnodes is { Count: > 0 })
             return;
 
         SimisNode placeholder = new() { Parent = this };
-        subnodes.Add(placeholder);
+        Subnodes.Add(placeholder);
     }
 
     /// <summary>
@@ -341,7 +388,7 @@ public class SimisNode(string? value = null)
     /// </summary>
     private void RemovePlaceholder(SimisNode subnode)
     {
-        if (HasOnlyPlaceholder && !ReferenceEquals(subnodes[0], subnode))
+        if (HasOnlyPlaceholder && !ReferenceEquals(subnodes![0], subnode))
         {
             subnodes[0].Parent = null;
             subnodes.Clear();
@@ -376,36 +423,64 @@ public class SimisNode(string? value = null)
     }
 
     /// <summary>
-    /// Holds formatting metadata for a <see cref="SimisNode"/> such as quoting and blank line counts.
+    /// Formatting metadata of a <see cref="SimisNode"/> such as quoting and blank line counts.
+    /// It is a view of the node: the values are kept in the node, and setting them changes the node.
     /// </summary>
     [DebuggerDisplay("OnSameLine={IsOnSameLineAsPrevious}, Lead={LeadingEmptyLines}, Trail={TrailingEmptyLines}, Quoted={IsQuoted}, Verbatim={IsVerbatim}")]
-    public sealed class SimisNodeFormatting()
+    public sealed class SimisNodeFormatting
     {
+        private readonly SimisNode node;
+
+        internal SimisNodeFormatting(SimisNode node)
+        {
+            this.node = node;
+        }
+
         /// <summary>
         /// True when this node was parsed as being on the same line as the previous node.
         /// </summary>
-        public bool IsOnSameLineAsPrevious { get; set; }
+        public bool IsOnSameLineAsPrevious
+        {
+            get => node.IsOnSameLineAsPrevious;
+            set => node.IsOnSameLineAsPrevious = value;
+        }
 
         /// <summary>
         /// Number of blank lines that preceded the node when parsed.
         /// </summary>
-        public byte LeadingEmptyLines { get; set; }
+        public byte LeadingEmptyLines
+        {
+            get => node.LeadingEmptyLines;
+            set => node.LeadingEmptyLines = value;
+        }
 
         /// <summary>
         /// Number of blank lines that followed the node when parsed.
         /// </summary>
-        public byte TrailingEmptyLines { get; set; }
+        public byte TrailingEmptyLines
+        {
+            get => node.TrailingEmptyLines;
+            set => node.TrailingEmptyLines = value;
+        }
 
         /// <summary>
         /// True when the node value was originally quoted in the input.
         /// </summary>
-        public bool IsQuoted { get; set; }
+        public bool IsQuoted
+        {
+            get => node.IsQuoted;
+            set => node.IsQuoted = value;
+        }
 
         /// <summary>
         /// True when the value is written exactly as it is, without quotes and without a separating space.
         /// The parser sets it on the content of a comment block. A verbatim value must keep its parentheses balanced, or the written text will not parse.
         /// </summary>
-        public bool IsVerbatim { get; set; }
+        public bool IsVerbatim
+        {
+            get => node.IsVerbatim;
+            set => node.IsVerbatim = value;
+        }
 
         /// <summary>
         /// Returns the node value quoted and escaped when <paramref name="preserveQuotes"/> is true and the value was quoted,
@@ -430,16 +505,7 @@ public class SimisNode(string? value = null)
         /// <param name="value">The node value.</param>
         public static bool RequiresQuotes(string value)
         {
-            if (value.Length == 0)
-                return true;
-
-            foreach (char c in value)
-            {
-                if (char.IsWhiteSpace(c) || c is '(' or ')' or '"' or '\\')
-                    return true;
-            }
-
-            return false;
+            return value.Length == 0 || value.AsSpan().ContainsAny(TokenConfiguration.CharactersRequiringQuotes);
         }
 
         /// <summary>

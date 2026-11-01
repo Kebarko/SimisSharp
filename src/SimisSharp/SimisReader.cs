@@ -1,5 +1,4 @@
 ﻿using KE.MSTS.SimisSharp.IO;
-using System.Buffers;
 
 namespace KE.MSTS.SimisSharp;
 
@@ -24,11 +23,6 @@ namespace KE.MSTS.SimisSharp;
 /// </example>
 public ref struct SimisReader
 {
-    /// <summary>
-    /// Characters that end an unquoted value: whitespace, parentheses and the double quote.
-    /// </summary>
-    private static readonly SearchValues<char> ValueStops = CreateValueStops();
-
     private readonly ReadOnlySpan<char> text;
     private readonly bool readComments;
     private int position;
@@ -335,7 +329,7 @@ public ref struct SimisReader
         int index = start;
         while (true)
         {
-            int found = text[index..].IndexOfAny(ValueStops);
+            int found = text[index..].IndexOfAny(TokenConfiguration.ValueEnds);
             if (found < 0)
                 return text.Length;
 
@@ -506,20 +500,4 @@ public ref struct SimisReader
     /// Whitespace as defined by the Open Rails STF reader: any control character or space.
     /// </summary>
     private static bool IsStfWhiteSpace(char c) => c <= ' ';
-
-    /// <summary>
-    /// Creates the set of characters that end an unquoted value: every character <see cref="char.IsWhiteSpace(char)"/> accepts,
-    /// both parentheses and the double quote.
-    /// </summary>
-    private static SearchValues<char> CreateValueStops()
-    {
-        List<char> stops = ['(', ')', '"'];
-        for (int c = char.MinValue; c <= char.MaxValue; c++)
-        {
-            if (char.IsWhiteSpace((char)c))
-                stops.Add((char)c);
-        }
-
-        return SearchValues.Create([.. stops]);
-    }
 }
