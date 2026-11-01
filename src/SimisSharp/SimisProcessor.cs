@@ -4,14 +4,11 @@ using System.Text;
 namespace KE.MSTS.SimisSharp;
 
 /// <summary>
-/// High-level facade that combines lexer, parser and writer to load/parse/save Simis documents. Allows dependency injection of custom lexer/parser/writer implementations for testing or extension.
+/// High-level facade that loads, parses and saves Simis documents.
+/// It holds no state, so one instance can be shared, also by several threads.
 /// </summary>
-public class SimisProcessor(ILexer? lexer = null, IParser? parser = null, IWriter? writer = null)
+public class SimisProcessor
 {
-    private readonly ILexer lexer = lexer ?? new Lexer();
-    private readonly IParser parser = parser ?? new Parser();
-    private readonly IWriter writer = writer ?? new Writer();
-
     /// <summary>
     /// Serialize the document into a string using the provided writer <paramref name="options"/>.
     /// </summary>
@@ -20,7 +17,7 @@ public class SimisProcessor(ILexer? lexer = null, IParser? parser = null, IWrite
     /// <returns>Textual representation of the document.</returns>
     public string Save(SimisDocument document, WriterOptions? options = null)
     {
-        return writer.Write(document, options);
+        return Writer.Write(document, options);
     }
 
     /// <summary>
@@ -85,8 +82,8 @@ public class SimisProcessor(ILexer? lexer = null, IParser? parser = null, IWrite
     /// unbalanced parentheses, or a block without a name. <see cref="SimisParseException.Line"/> tells where.</exception>
     public SimisDocument Parse(string content)
     {
-        IList<string> tokens = lexer.Lex(content);
-        return parser.Parse(tokens);
+        IList<string> tokens = Lexer.Lex(content);
+        return Parser.Parse(tokens);
     }
 
     /// <summary>

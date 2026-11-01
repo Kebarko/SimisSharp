@@ -5,14 +5,14 @@ using static KE.MSTS.SimisSharp.IO.WriterOptions;
 namespace KE.MSTS.SimisSharp.IO;
 
 /// <summary>
-/// Default implementation of <see cref="IWriter"/>. Writes a <see cref="SimisDocument"/> to a string honoring the settings in <see cref="WriterOptions"/>.
+/// Writes a <see cref="SimisDocument"/> to a string honoring the settings in <see cref="WriterOptions"/>.
 /// </summary>
-internal class Writer : IWriter
+internal static class Writer
 {
     /// <summary>
     /// Write the provided document to text according to the options.
     /// </summary>
-    public string Write(SimisDocument document, WriterOptions? options = null)
+    public static string Write(SimisDocument document, WriterOptions? options = null)
     {
         options ??= new();
 

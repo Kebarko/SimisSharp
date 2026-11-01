@@ -1,16 +1,16 @@
 ﻿namespace KE.MSTS.SimisSharp.IO;
 
 /// <summary>
-/// Default parser implementation that builds a <see cref="SimisDocument"/> from a token stream.
+/// Parser that builds a <see cref="SimisDocument"/> from a token stream.
 /// </summary>
-internal class Parser : IParser
+internal static class Parser
 {
     /// <summary>
     /// Parse the provided tokens into a document tree. Handles node quoting and leading/trailing empty line counts.
     /// The content of a comment block is kept verbatim as a single child node.
     /// </summary>
     /// <exception cref="SimisParseException">When the parentheses are unbalanced, or a block has no name.</exception>
-    public SimisDocument Parse(IEnumerable<string> tokens)
+    public static SimisDocument Parse(IEnumerable<string> tokens)
     {
         SimisDocument document = new();
         SimisNode parent = document.Root;

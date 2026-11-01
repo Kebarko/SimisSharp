@@ -1,18 +1,18 @@
 ﻿namespace KE.MSTS.SimisSharp.IO;
 
 /// <summary>
-/// Default lexer implementation for Simis text format.
+/// Lexer for the Simis text format.
 /// Produces tokens such as words, quoted strings, parentheses and newline tokens.
 /// The content of a comment block is emitted verbatim as a single token between its parentheses.
 /// </summary>
-internal class Lexer : ILexer
+internal static class Lexer
 {
     /// <summary>
     /// Tokenize the provided <paramref name="text"/>. Throws for unterminated quoted strings and comment blocks.
     /// </summary>
     /// <exception cref="ArgumentNullException">When <paramref name="text"/> is null.</exception>
     /// <exception cref="SimisParseException">When a quoted string or a comment block is not terminated.</exception>
-    public IList<string> Lex(string text)
+    public static IList<string> Lex(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
 
