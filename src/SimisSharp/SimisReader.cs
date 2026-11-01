@@ -23,20 +23,54 @@ namespace KE.MSTS.SimisSharp;
 /// </example>
 public ref struct SimisReader
 {
+    /// <summary>
+    /// The text being read.
+    /// </summary>
     private readonly ReadOnlySpan<char> text;
+
+    /// <summary>
+    /// True when comment blocks are reported as tokens instead of being skipped.
+    /// </summary>
     private readonly bool readComments;
+
+    /// <summary>
+    /// The index of the next character to read.
+    /// </summary>
     private int position;
+
+    /// <summary>
+    /// The 1-based line of the character at <see cref="position"/>.
+    /// </summary>
     private int line;
 
     /// <summary>
     /// The open blocks, three entries each: start and length of the name as written, and the line of the opening parenthesis.
     /// </summary>
     private int[]? openBlocks;
+
+    /// <summary>
+    /// The number of open blocks recorded in <see cref="openBlocks"/>.
+    /// </summary>
     private int openBlockCount;
 
+    /// <summary>
+    /// The start of the current value or name in <see cref="text"/>, at the opening quote when it is quoted.
+    /// </summary>
     private int tokenStart;
+
+    /// <summary>
+    /// The length of the current value or name as written, including its quotes.
+    /// </summary>
     private int tokenLength;
+
+    /// <summary>
+    /// The start of the content of the current comment block in <see cref="text"/>.
+    /// </summary>
     private int commentStart;
+
+    /// <summary>
+    /// The length of the content of the current comment block.
+    /// </summary>
     private int commentLength;
 
     /// <summary>
@@ -93,6 +127,7 @@ public ref struct SimisReader
     /// The text of the current value with escape sequences decoded, so that it equals <see cref="SimisNode.Value"/>.
     /// Use it only where the value is needed as a string, because it allocates.
     /// </summary>
+    /// <returns>The decoded value, the block or comment block name, or an empty string for other tokens.</returns>
     public readonly string GetString()
     {
         return IsQuoted ? SimisValue.Unescape(ValueSpan) : ValueSpan.ToString();
@@ -100,7 +135,11 @@ public ref struct SimisReader
 
     /// <summary>
     /// Compares the current value with <paramref name="value"/>, by default ignoring letter case as MSTS and Open Rails do.
+    /// Escape sequences of a quoted value are decoded first.
     /// </summary>
+    /// <param name="value">The text to compare with, such as a block name.</param>
+    /// <param name="comparisonType">How the values are compared.</param>
+    /// <returns>True when the current value equals <paramref name="value"/>.</returns>
     public readonly bool ValueEquals(ReadOnlySpan<char> value, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase)
     {
         return DecodedSpan.Equals(value, comparisonType);
@@ -109,11 +148,16 @@ public ref struct SimisReader
     /// <summary>
     /// Reads the current value as a number without a unit (see <see cref="SimisValue.TryParseDouble(ReadOnlySpan{char}, out double)"/>).
     /// </summary>
+    /// <param name="value">The number, or 0 when the value is not a number.</param>
+    /// <returns>True when the value is a number.</returns>
     public readonly bool TryGetDouble(out double value) => SimisValue.TryParseDouble(DecodedSpan, out value);
 
     /// <summary>
     /// Reads the current value as a number with an optional unit, such as <c>10t</c> (see <see cref="SimisValue.TryParseNumber(string?, out double, out string)"/>).
     /// </summary>
+    /// <param name="value">The number, or 0 when the value does not start with a number.</param>
+    /// <param name="unit">The unit as written, or an empty string when there is none.</param>
+    /// <returns>True when the value starts with a number.</returns>
     public readonly bool TryGetNumber(out double value, out string unit)
     {
         bool parsed = SimisValue.TryParseNumber(DecodedSpan, out value, out ReadOnlySpan<char> unitSpan);
@@ -124,21 +168,29 @@ public ref struct SimisReader
     /// <summary>
     /// Reads the current value as a signed 32-bit integer (see <see cref="SimisValue.TryParseInt32(ReadOnlySpan{char}, out int)"/>).
     /// </summary>
+    /// <param name="value">The integer, or 0 when the value is not an integer in range.</param>
+    /// <returns>True when the value is an integer in range.</returns>
     public readonly bool TryGetInt32(out int value) => SimisValue.TryParseInt32(DecodedSpan, out value);
 
     /// <summary>
     /// Reads the current value as an unsigned 32-bit integer (see <see cref="SimisValue.TryParseUInt32(ReadOnlySpan{char}, out uint)"/>).
     /// </summary>
+    /// <param name="value">The integer, or 0 when the value is not an unsigned integer in range.</param>
+    /// <returns>True when the value is an unsigned integer in range.</returns>
     public readonly bool TryGetUInt32(out uint value) => SimisValue.TryParseUInt32(DecodedSpan, out value);
 
     /// <summary>
     /// Reads the current value as a hexadecimal number without a prefix (see <see cref="SimisValue.TryParseHex(ReadOnlySpan{char}, out uint)"/>).
     /// </summary>
+    /// <param name="value">The number, or 0 when the value is not a hexadecimal number in range.</param>
+    /// <returns>True when the value is a hexadecimal number in range.</returns>
     public readonly bool TryGetHex(out uint value) => SimisValue.TryParseHex(DecodedSpan, out value);
 
     /// <summary>
     /// Reads the current value as a boolean (see <see cref="SimisValue.TryParseBoolean(ReadOnlySpan{char}, out bool)"/>).
     /// </summary>
+    /// <param name="value">The boolean, or false when the value is not a boolean.</param>
+    /// <returns>True when the value is a boolean.</returns>
     public readonly bool TryGetBoolean(out bool value) => SimisValue.TryParseBoolean(DecodedSpan, out value);
 
     /// <summary>
@@ -244,6 +296,7 @@ public ref struct SimisReader
     /// <summary>
     /// Skips whitespace from the current position and returns the number of line breaks skipped.
     /// </summary>
+    /// <returns>The number of line breaks skipped.</returns>
     private int SkipWhiteSpace()
     {
         int lineBreaks = 0;
@@ -265,6 +318,8 @@ public ref struct SimisReader
     /// <summary>
     /// Returns the index of the first character at or after <paramref name="index"/> that is not whitespace.
     /// </summary>
+    /// <param name="index">The index to start at.</param>
+    /// <returns>The index, or the length of the text when only whitespace follows.</returns>
     private readonly int SkipWhiteSpace(int index)
     {
         while (index < text.Length && char.IsWhiteSpace(text[index]))
@@ -302,6 +357,8 @@ public ref struct SimisReader
     /// <summary>
     /// Returns the index of the double quote that ends a quoted value whose content starts at <paramref name="index"/>.
     /// </summary>
+    /// <param name="index">The index of the first character after the opening quote.</param>
+    /// <returns>The index of the closing quote.</returns>
     /// <exception cref="SimisParseException">When there is no such double quote.</exception>
     private readonly int FindClosingQuote(int index)
     {
@@ -324,6 +381,8 @@ public ref struct SimisReader
     /// <summary>
     /// Returns the index after the end of an unquoted value that starts at <paramref name="start"/>.
     /// </summary>
+    /// <param name="start">The index of the first character of the value.</param>
+    /// <returns>The index of the first character after the value.</returns>
     private readonly int FindValueEnd(int start)
     {
         int index = start;
@@ -344,6 +403,9 @@ public ref struct SimisReader
     /// <summary>
     /// Returns true when the character at <paramref name="index"/> follows an odd number of backslashes, counted back to <paramref name="start"/>.
     /// </summary>
+    /// <param name="start">The index of the first character of the value.</param>
+    /// <param name="index">The index of the character to check.</param>
+    /// <returns>True when the character is escaped.</returns>
     private readonly bool IsEscaped(int start, int index)
     {
         int backslash = index - 1;
@@ -371,6 +433,7 @@ public ref struct SimisReader
     /// <summary>
     /// Creates the exception for the innermost open block at the end of the text, reported at the line of its opening parenthesis.
     /// </summary>
+    /// <returns>The exception to throw.</returns>
     private readonly SimisParseException NotClosed()
     {
         int index = (openBlockCount - 1) * 3;
@@ -383,6 +446,8 @@ public ref struct SimisReader
     /// <summary>
     /// Returns the 1-based line of the character at <paramref name="index"/>.
     /// </summary>
+    /// <param name="index">The index of the character.</param>
+    /// <returns>The 1-based line.</returns>
     private readonly int GetLine(int index)
     {
         return text[..index].Count('\n') + 1;
@@ -393,6 +458,7 @@ public ref struct SimisReader
     /// The content is skipped item by item the same way Open Rails skips a comment block, so parentheses inside quoted strings,
     /// including strings joined with <c>+</c>, and characters escaped with a backslash do not open or close a block.
     /// </summary>
+    /// <param name="start">The index of the first character after the opening parenthesis.</param>
     /// <returns>Index of the closing parenthesis.</returns>
     /// <exception cref="SimisParseException">When the block or a quoted string inside it is not terminated.</exception>
     private readonly int FindCommentBlockEnd(int start)
@@ -429,6 +495,7 @@ public ref struct SimisReader
     /// <summary>
     /// Skips the rest of a quoted item whose opening quote precedes <paramref name="index"/>, including any strings appended with <c>+</c>.
     /// </summary>
+    /// <param name="index">The index of the first character after the opening quote.</param>
     /// <returns>Index of the first character after the item.</returns>
     /// <exception cref="SimisParseException">When the quoted string is not terminated.</exception>
     private readonly int SkipQuotedItem(int index)
@@ -465,6 +532,7 @@ public ref struct SimisReader
     /// Skips the rest of an unquoted item whose first character precedes <paramref name="index"/>.
     /// The item ends before a parenthesis, or after whitespace or a double quote. A backslash escapes the next character.
     /// </summary>
+    /// <param name="index">The index of the second character of the item.</param>
     /// <returns>Index of the first character after the item.</returns>
     private readonly int SkipPlainItem(int index)
     {
@@ -488,6 +556,8 @@ public ref struct SimisReader
     /// <summary>
     /// Returns the index of the first character at or after <paramref name="index"/> that is not whitespace as Open Rails defines it.
     /// </summary>
+    /// <param name="index">The index to start at.</param>
+    /// <returns>The index, or the length of the text when only whitespace follows.</returns>
     private readonly int SkipStfWhiteSpace(int index)
     {
         while (index < text.Length && IsStfWhiteSpace(text[index]))
@@ -499,5 +569,7 @@ public ref struct SimisReader
     /// <summary>
     /// Whitespace as defined by the Open Rails STF reader: any control character or space.
     /// </summary>
+    /// <param name="c">The character to check.</param>
+    /// <returns>True when the character is whitespace.</returns>
     private static bool IsStfWhiteSpace(char c) => c <= ' ';
 }

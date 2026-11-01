@@ -9,6 +9,8 @@ internal static class Parser
     /// Parse <paramref name="text"/> into a document tree. Keeps node quoting and leading/trailing empty line counts.
     /// The content of a comment block is kept verbatim as a single child node.
     /// </summary>
+    /// <param name="text">The text to parse.</param>
+    /// <returns>The parsed document.</returns>
     /// <exception cref="ArgumentNullException">When <paramref name="text"/> is null.</exception>
     /// <exception cref="SimisParseException">When the text is not well-formed (see <see cref="SimisReader.Read"/>).</exception>
     public static SimisDocument Parse(string text)

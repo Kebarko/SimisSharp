@@ -11,6 +11,7 @@ public class SimisProcessor
 {
     /// <summary>
     /// Serialize the document into a string using the provided writer <paramref name="options"/>.
+    /// Lines end with <see cref="Environment.NewLine"/>, and text that is not empty ends with a line break.
     /// </summary>
     /// <param name="document">Document to save.</param>
     /// <param name="options">Optional writer options.</param>
@@ -28,6 +29,8 @@ public class SimisProcessor
     /// <param name="document">Document to save.</param>
     /// <param name="filePath">Target file path to create/overwrite.</param>
     /// <param name="options">Optional writer options.</param>
+    /// <exception cref="IOException">When the file cannot be written, such as when its folder does not exist or the disk is full.</exception>
+    /// <exception cref="UnauthorizedAccessException">When writing is not permitted. Saving needs permission to create the temporary file in the folder.</exception>
     public void Save(SimisDocument document, string filePath, WriterOptions? options = null)
     {
         string content = Save(document, options);
@@ -59,6 +62,7 @@ public class SimisProcessor
     /// <summary>
     /// Deletes a leftover temporary file, ignoring errors so that the original exception is not hidden.
     /// </summary>
+    /// <param name="path">The file to delete. A file that does not exist is ignored.</param>
     private static void DeleteQuietly(string path)
     {
         try
@@ -78,6 +82,7 @@ public class SimisProcessor
     /// </summary>
     /// <param name="content">Text content to parse.</param>
     /// <returns>Parsed document AST.</returns>
+    /// <exception cref="ArgumentNullException">When <paramref name="content"/> is null.</exception>
     /// <exception cref="SimisParseException">When the text is not well-formed: an unterminated quoted string or comment block,
     /// unbalanced parentheses, or a block without a name. <see cref="SimisParseException.Line"/> tells where.</exception>
     public SimisDocument Parse(string content)
@@ -92,6 +97,8 @@ public class SimisProcessor
     /// </summary>
     /// <param name="filePath">Path to the file to open.</param>
     /// <returns>Parsed document AST.</returns>
+    /// <exception cref="IOException">When the file cannot be read, such as when it does not exist.</exception>
+    /// <exception cref="UnauthorizedAccessException">When reading the file is not permitted.</exception>
     /// <exception cref="NotSupportedException">When the file is a binary or compressed SIMIS file.</exception>
     /// <exception cref="FormatException">When the file is not valid text in the detected encoding.</exception>
     /// <exception cref="SimisParseException">When the text is not well-formed (see <see cref="Parse(string)"/>).</exception>
@@ -108,6 +115,8 @@ public class SimisProcessor
     /// <param name="encoding">Encoding of a file without a byte order mark that is not UTF-16, such as an ANSI file. Null means UTF-8.
     /// ANSI code pages such as Windows-1250 require registering <c>System.Text.CodePagesEncodingProvider</c> first.</param>
     /// <returns>Parsed document AST.</returns>
+    /// <exception cref="IOException">When the file cannot be read, such as when it does not exist.</exception>
+    /// <exception cref="UnauthorizedAccessException">When reading the file is not permitted.</exception>
     /// <exception cref="NotSupportedException">When the file is a binary or compressed SIMIS file.</exception>
     /// <exception cref="FormatException">When the file is not valid text in the detected encoding.</exception>
     /// <exception cref="SimisParseException">When the text is not well-formed (see <see cref="Parse(string)"/>).</exception>
@@ -122,6 +131,8 @@ public class SimisProcessor
     /// </summary>
     /// <param name="filePath">Path to the file to open.</param>
     /// <returns>The text of the file without the byte order mark.</returns>
+    /// <exception cref="IOException">When the file cannot be read, such as when it does not exist.</exception>
+    /// <exception cref="UnauthorizedAccessException">When reading the file is not permitted.</exception>
     /// <exception cref="NotSupportedException">When the file is a binary or compressed SIMIS file.</exception>
     /// <exception cref="FormatException">When the file is not valid text in the detected encoding.</exception>
     public string LoadText(string filePath)
@@ -135,6 +146,8 @@ public class SimisProcessor
     /// <param name="filePath">Path to the file to open.</param>
     /// <param name="encoding">Encoding of a file without a byte order mark that is not UTF-16, such as an ANSI file. Null means UTF-8.</param>
     /// <returns>The text of the file without the byte order mark.</returns>
+    /// <exception cref="IOException">When the file cannot be read, such as when it does not exist.</exception>
+    /// <exception cref="UnauthorizedAccessException">When reading the file is not permitted.</exception>
     /// <exception cref="NotSupportedException">When the file is a binary or compressed SIMIS file.</exception>
     /// <exception cref="FormatException">When the file is not valid text in the detected encoding.</exception>
     public string LoadText(string filePath, Encoding? encoding)

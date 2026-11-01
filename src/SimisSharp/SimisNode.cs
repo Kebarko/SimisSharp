@@ -5,19 +5,30 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace KE.MSTS.SimisSharp;
 
-[DebuggerDisplay("Value='{Value}' Parent='{Parent?.Value}' Subnodes={subnodes == null ? 0 : subnodes.Count}")]
 /// <summary>
-/// Represents a node in the Simis document tree. Nodes may be leaves (value) or containers (have child nodes). The root node is a dummy node where <see cref="Value"/> is null.
+/// Represents a node in the Simis document tree: a value, such as <c>10t</c>, or a block, whose name is its <see cref="Value"/>
+/// and whose content is its child nodes, such as <c>Mass ( 10t )</c>. The root of a tree, such as <see cref="SimisDocument.Root"/>, has no value.
 /// </summary>
+/// <remarks>
+/// Nodes are not thread-safe. Synchronize access when several threads use the same tree.
+/// </remarks>
+/// <param name="value">The value of the node, or null for the root of a tree.</param>
+[DebuggerDisplay("Value='{Value}' Parent='{Parent?.Value}' Subnodes={subnodes == null ? 0 : subnodes.Count}")]
 public class SimisNode(string? value = null)
 {
-    // Created with the first child, so that leaves, most nodes of a tree, have no list.
+    /// <summary>
+    /// The child nodes. The list is created with the first child, so that values, which are most nodes of a tree, have none.
+    /// </summary>
     private List<SimisNode>? subnodes;
+
+    /// <summary>
+    /// The read-only view <see cref="Nodes"/> returns, created on first use.
+    /// </summary>
     private ReadOnlyCollection<SimisNode>? nodesView;
 
     /// <summary>
-    /// The value of the node: a token, a block name, or the verbatim content of a comment block.
-    /// Null for dummy nodes (including the root and empty placeholders).
+    /// The value of the node: a value, a block name, or the verbatim content of a comment block.
+    /// Null for the root of a tree and for the placeholder of an empty block (see <see cref="IsDummyLeaf"/>).
     /// The escape sequences of a quoted value are decoded (see <see cref="SimisValue.Unescape"/>), so <c>"C:\\Routes"</c> has the value <c>C:\Routes</c>.
     /// An unquoted value is kept as written. The writer quotes and escapes a value when it needs to.
     /// Renaming a block can turn it into a comment block or back (see <see cref="IsComment"/>).
@@ -40,13 +51,15 @@ public class SimisNode(string? value = null)
     } = value;
 
     /// <summary>
-    /// The token as it was written in the parsed text, including quotes, while <see cref="Value"/> is unchanged.
+    /// The value as it was written in the parsed text, including quotes, kept while <see cref="Value"/> is unchanged.
+    /// The parser keeps it only where the writer would write the value differently: a quoted value with an escape sequence, a line feed or a tab,
+    /// and an unquoted value with a backslash or an escaped double quote. Otherwise it is null.
     /// The writer reuses it so that unchanged values are written exactly as they were read.
     /// </summary>
     internal string? OriginalText { get; set; }
 
     /// <summary>
-    /// Parent node; null for the document root.
+    /// The parent node. Null for the root of a tree, and for a node that has not been added to a parent or has been removed from it.
     /// </summary>
     public SimisNode? Parent { get; private set; }
 
@@ -57,15 +70,24 @@ public class SimisNode(string? value = null)
     public SimisNodeFormatting Formatting => new(this);
 
     // The formatting is kept in the node rather than in a separate object, so that parsing creates one object per node.
-    // See SimisNodeFormatting for the meaning of each property.
+
+    /// <inheritdoc cref="SimisNodeFormatting.IsOnSameLineAsPrevious"/>
     internal bool IsOnSameLineAsPrevious { get; set; }
+
+    /// <inheritdoc cref="SimisNodeFormatting.LeadingEmptyLines"/>
     internal byte LeadingEmptyLines { get; set; }
+
+    /// <inheritdoc cref="SimisNodeFormatting.TrailingEmptyLines"/>
     internal byte TrailingEmptyLines { get; set; }
+
+    /// <inheritdoc cref="SimisNodeFormatting.IsQuoted"/>
     internal bool IsQuoted { get; set; }
+
+    /// <inheritdoc cref="SimisNodeFormatting.IsVerbatim"/>
     internal bool IsVerbatim { get; set; }
 
     /// <summary>
-    /// True when node has no child nodes.
+    /// True when node has no child nodes. An empty block, such as <c>Lights ( )</c>, is not a leaf: it has a placeholder child (see <see cref="IsDummyLeaf"/>).
     /// </summary>
     public bool IsLeaf => subnodes is not { Count: > 0 };
 
@@ -86,7 +108,7 @@ public class SimisNode(string? value = null)
     private List<SimisNode> Subnodes => subnodes ??= [];
 
     /// <summary>
-    /// True when node is the dummy root (no parent and no value).
+    /// True when node has no parent and no value, as <see cref="SimisDocument.Root"/> has.
     /// </summary>
     public bool IsDummyRoot => Parent == null && Value == null;
 
@@ -102,51 +124,78 @@ public class SimisNode(string? value = null)
     /// <summary>
     /// Reads the value as a number without a unit (see <see cref="SimisValue.TryParseDouble(string?, out double)"/>).
     /// </summary>
+    /// <param name="value">The number, or 0 when the value is not a number.</param>
+    /// <returns>True when the value is a number.</returns>
     public bool TryGetDouble(out double value) => SimisValue.TryParseDouble(Value, out value);
 
     /// <summary>
     /// Reads the value as a number with an optional unit, such as <c>10t</c> (see <see cref="SimisValue.TryParseNumber(string?, out double, out string)"/>).
     /// </summary>
+    /// <param name="value">The number, or 0 when the value does not start with a number.</param>
+    /// <param name="unit">The unit as written, or an empty string when there is none.</param>
+    /// <returns>True when the value starts with a number.</returns>
     public bool TryGetNumber(out double value, out string unit) => SimisValue.TryParseNumber(Value, out value, out unit);
 
     /// <summary>
     /// Reads the value as a signed 32-bit integer (see <see cref="SimisValue.TryParseInt32(string?, out int)"/>).
     /// </summary>
+    /// <param name="value">The integer, or 0 when the value is not an integer in range.</param>
+    /// <returns>True when the value is an integer in range.</returns>
     public bool TryGetInt32(out int value) => SimisValue.TryParseInt32(Value, out value);
 
     /// <summary>
     /// Reads the value as an unsigned 32-bit integer (see <see cref="SimisValue.TryParseUInt32(string?, out uint)"/>).
     /// </summary>
+    /// <param name="value">The integer, or 0 when the value is not an unsigned integer in range.</param>
+    /// <returns>True when the value is an unsigned integer in range.</returns>
     public bool TryGetUInt32(out uint value) => SimisValue.TryParseUInt32(Value, out value);
 
     /// <summary>
     /// Reads the value as a hexadecimal number without a prefix (see <see cref="SimisValue.TryParseHex(string?, out uint)"/>).
     /// </summary>
+    /// <param name="value">The number, or 0 when the value is not a hexadecimal number in range.</param>
+    /// <returns>True when the value is a hexadecimal number in range.</returns>
     public bool TryGetHex(out uint value) => SimisValue.TryParseHex(Value, out value);
 
     /// <summary>
     /// Reads the value as a boolean (see <see cref="SimisValue.TryParseBoolean(string?, out bool)"/>).
     /// </summary>
+    /// <param name="value">The boolean, or false when the value is not a boolean.</param>
+    /// <returns>True when the value is a boolean.</returns>
     public bool TryGetBoolean(out bool value) => SimisValue.TryParseBoolean(Value, out value);
 
     /// <summary>
     /// Sets the value to a number with an optional unit, independent of the current culture (see <see cref="SimisValue.Format(double, string?)"/>).
     /// </summary>
+    /// <param name="value">The number.</param>
+    /// <param name="unit">The unit written after the number, such as <c>t</c> or <c>kN</c>, or null for none.</param>
+    /// <exception cref="ArgumentOutOfRangeException">When <paramref name="value"/> is not finite.</exception>
+    /// <exception cref="ArgumentException">When <paramref name="unit"/> would not be read back as the same unit.</exception>
     public void SetValue(double value, string? unit = null) => Value = SimisValue.Format(value, unit);
 
     /// <summary>
     /// Sets the value to a single precision number with an optional unit, independent of the current culture (see <see cref="SimisValue.Format(float, string?)"/>).
     /// </summary>
+    /// <param name="value">The number.</param>
+    /// <param name="unit">The unit written after the number, such as <c>t</c> or <c>kN</c>, or null for none.</param>
+    /// <exception cref="ArgumentOutOfRangeException">When <paramref name="value"/> is not finite.</exception>
+    /// <exception cref="ArgumentException">When <paramref name="unit"/> would not be read back as the same unit.</exception>
     public void SetValue(float value, string? unit = null) => Value = SimisValue.Format(value, unit);
 
     /// <summary>
     /// Sets the value to an integer with an optional unit (see <see cref="SimisValue.Format(long, string?)"/>).
     /// </summary>
+    /// <param name="value">The integer.</param>
+    /// <param name="unit">The unit written after the integer, such as <c>kW</c>, or null for none.</param>
+    /// <exception cref="ArgumentException">When <paramref name="unit"/> would not be read back as the same unit.</exception>
     public void SetValue(long value, string? unit = null) => Value = SimisValue.Format(value, unit);
 
     /// <summary>
     /// Sets the value to a hexadecimal number without a prefix (see <see cref="SimisValue.FormatHex"/>).
     /// </summary>
+    /// <param name="value">The number.</param>
+    /// <param name="digits">The minimum number of digits, padded with zeros.</param>
+    /// <exception cref="ArgumentOutOfRangeException">When <paramref name="digits"/> is negative.</exception>
     public void SetHexValue(uint value, int digits = 8) => Value = SimisValue.FormatHex(value, digits);
 
     /// <summary>
@@ -158,6 +207,8 @@ public class SimisNode(string? value = null)
     /// <summary>
     /// Returns the index of <paramref name="subnode"/> among the child nodes, or -1 when it is not a child of this node.
     /// </summary>
+    /// <param name="subnode">The node to look for.</param>
+    /// <returns>The 0-based index, or -1.</returns>
     public int IndexOf(SimisNode subnode)
     {
         return subnodes?.IndexOf(subnode) ?? -1;
@@ -166,6 +217,7 @@ public class SimisNode(string? value = null)
     /// <summary>
     /// Returns a shallow copy list of child nodes.
     /// </summary>
+    /// <returns>A new list of the child nodes in document order.</returns>
     public IList<SimisNode> GetNodes()
     {
         return subnodes is null ? [] : [.. subnodes];
@@ -174,6 +226,8 @@ public class SimisNode(string? value = null)
     /// <summary>
     /// Returns a shallow copy list of child nodes filtered by <paramref name="predicate"/>.
     /// </summary>
+    /// <param name="predicate">The condition a child node must meet.</param>
+    /// <returns>A new list of the matching child nodes in document order.</returns>
     public IList<SimisNode> GetNodes(Func<SimisNode, bool> predicate)
     {
         List<SimisNode> result = [];
@@ -193,6 +247,9 @@ public class SimisNode(string? value = null)
     /// Find all child nodes with the specified <paramref name="value"/> using the given string comparison.
     /// By default letter case is ignored, as MSTS and Open Rails do.
     /// </summary>
+    /// <param name="value">The value or block name to look for.</param>
+    /// <param name="comparisonType">How the values are compared.</param>
+    /// <returns>A new list of the matching child nodes in document order.</returns>
     public IList<SimisNode> GetNodes(string value, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase)
     {
         return GetNodes(c => string.Equals(c.Value, value, comparisonType));
@@ -202,6 +259,9 @@ public class SimisNode(string? value = null)
     /// Find the first child with the specified <paramref name="value"/> using the given string comparison, or null if none found.
     /// By default letter case is ignored, as MSTS and Open Rails do.
     /// </summary>
+    /// <param name="value">The value or block name to look for.</param>
+    /// <param name="comparisonType">How the values are compared.</param>
+    /// <returns>The first matching child node, or null.</returns>
     public SimisNode? GetNode(string value, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase)
     {
         if (subnodes is null)
@@ -218,8 +278,11 @@ public class SimisNode(string? value = null)
 
     /// <summary>
     /// Adds a new child with the specified <paramref name="value"/> after the existing child nodes.
+    /// Adding a child to an empty block replaces its placeholder (see <see cref="IsDummyLeaf"/>).
     /// </summary>
+    /// <param name="value">The value of the new child node.</param>
     /// <returns>The new child node.</returns>
+    /// <exception cref="InvalidOperationException">When this node has no value and is not the root of a tree, so the result would be a block without a name.</exception>
     public SimisNode AddNode(string value)
     {
         return AddNode(new SimisNode(value));
@@ -230,6 +293,7 @@ public class SimisNode(string? value = null)
     /// A node that already has a parent is moved: it is removed from its current parent first.
     /// Adding a child to an empty block replaces its placeholder (see <see cref="IsDummyLeaf"/>).
     /// </summary>
+    /// <param name="subnode">The node to add.</param>
     /// <returns>The added node.</returns>
     /// <exception cref="ArgumentNullException">When <paramref name="subnode"/> is null.</exception>
     /// <exception cref="InvalidOperationException">When <paramref name="subnode"/> is this node or one of its ancestors,
@@ -247,6 +311,7 @@ public class SimisNode(string? value = null)
     /// Adds a node the parser has just created after the existing child nodes, without the checks of <see cref="AddNode(SimisNode)"/>.
     /// The parser only adds new nodes that have a value, and the placeholder of an empty block.
     /// </summary>
+    /// <param name="subnode">The new node to add.</param>
     internal void AddParsedNode(SimisNode subnode)
     {
         subnode.Parent = this;
@@ -255,9 +320,13 @@ public class SimisNode(string? value = null)
 
     /// <summary>
     /// Inserts a new child with the specified <paramref name="value"/> at <paramref name="index"/>.
+    /// Inserting into an empty block replaces its placeholder (see <see cref="IsDummyLeaf"/>), so the only valid index is 0.
     /// </summary>
+    /// <param name="index">The 0-based position of the new child node.</param>
+    /// <param name="value">The value of the new child node.</param>
     /// <returns>The new child node.</returns>
     /// <exception cref="ArgumentOutOfRangeException">When <paramref name="index"/> is negative or greater than the number of child nodes.</exception>
+    /// <exception cref="InvalidOperationException">When this node has no value and is not the root of a tree, so the result would be a block without a name.</exception>
     public SimisNode InsertNode(int index, string value)
     {
         return InsertNode(index, new SimisNode(value));
@@ -269,6 +338,8 @@ public class SimisNode(string? value = null)
     /// When it is already a child of this node, <paramref name="index"/> refers to the child nodes without it.
     /// Inserting into an empty block replaces its placeholder (see <see cref="IsDummyLeaf"/>), so the only valid index is 0.
     /// </summary>
+    /// <param name="index">The 0-based position of the inserted node.</param>
+    /// <param name="subnode">The node to insert.</param>
     /// <returns>The inserted node.</returns>
     /// <exception cref="ArgumentNullException">When <paramref name="subnode"/> is null.</exception>
     /// <exception cref="ArgumentOutOfRangeException">When <paramref name="index"/> is negative or greater than the number of child nodes.</exception>
@@ -293,6 +364,8 @@ public class SimisNode(string? value = null)
     /// Replaces the child <paramref name="oldNode"/> with <paramref name="newNode"/> at the same position.
     /// The old node loses its parent reference. A new node that already has a parent is moved: it is removed from its current parent first.
     /// </summary>
+    /// <param name="oldNode">The child node to replace.</param>
+    /// <param name="newNode">The node to put in its place.</param>
     /// <returns>The new node.</returns>
     /// <exception cref="ArgumentNullException">When <paramref name="oldNode"/> or <paramref name="newNode"/> is null.</exception>
     /// <exception cref="ArgumentException">When <paramref name="oldNode"/> is not a child of this node.</exception>
@@ -320,6 +393,8 @@ public class SimisNode(string? value = null)
     /// By default letter case is ignored, as MSTS and Open Rails do.
     /// A block that loses its last child stays an empty block (see <see cref="IsDummyLeaf"/>).
     /// </summary>
+    /// <param name="value">The value or block name of the child nodes to remove.</param>
+    /// <param name="comparisonType">How the values are compared.</param>
     public void RemoveNode(string value, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase)
     {
         if (subnodes is null)
@@ -342,9 +417,10 @@ public class SimisNode(string? value = null)
     }
 
     /// <summary>
-    /// Removes a specific child node and clears its parent reference.
+    /// Removes a specific child node and clears its parent reference. Does nothing when it is not a child of this node.
     /// A block that loses its last child stays an empty block (see <see cref="IsDummyLeaf"/>).
     /// </summary>
+    /// <param name="subnode">The child node to remove.</param>
     public void RemoveNode(SimisNode subnode)
     {
         if (subnodes is not null && subnodes.Remove(subnode))
@@ -386,6 +462,7 @@ public class SimisNode(string? value = null)
     /// <summary>
     /// Removes the placeholder of an empty block before <paramref name="subnode"/> is added to it.
     /// </summary>
+    /// <param name="subnode">The node about to be added.</param>
     private void RemovePlaceholder(SimisNode subnode)
     {
         if (HasOnlyPlaceholder && !ReferenceEquals(subnodes![0], subnode))
@@ -399,6 +476,7 @@ public class SimisNode(string? value = null)
     /// Detaches <paramref name="subnode"/> from its current parent and makes this node its parent.
     /// The caller adds it to the child nodes.
     /// </summary>
+    /// <param name="subnode">The node about to be added.</param>
     /// <exception cref="ArgumentNullException">When <paramref name="subnode"/> is null.</exception>
     /// <exception cref="InvalidOperationException">When <paramref name="subnode"/> is this node or one of its ancestors,
     /// or when the result would be a block without a name, which cannot be written.</exception>
@@ -429,15 +507,24 @@ public class SimisNode(string? value = null)
     [DebuggerDisplay("OnSameLine={IsOnSameLineAsPrevious}, Lead={LeadingEmptyLines}, Trail={TrailingEmptyLines}, Quoted={IsQuoted}, Verbatim={IsVerbatim}")]
     public sealed class SimisNodeFormatting
     {
+        /// <summary>
+        /// The node whose formatting this is.
+        /// </summary>
         private readonly SimisNode node;
 
+        /// <summary>
+        /// Creates a view of the formatting of <paramref name="node"/>.
+        /// </summary>
+        /// <param name="node">The node whose formatting this is.</param>
         internal SimisNodeFormatting(SimisNode node)
         {
             this.node = node;
         }
 
         /// <summary>
-        /// True when this node was parsed as being on the same line as the previous node.
+        /// True when the node was parsed on the same line as the node before it. The parser never sets it on the first child of a block,
+        /// even when it is on the line of the block name. The writer uses it to keep a comment block on the line of the node before it
+        /// (see <see cref="WriterOptions.PreserveCommentPosition"/>).
         /// </summary>
         public bool IsOnSameLineAsPrevious
         {
@@ -446,7 +533,8 @@ public class SimisNode(string? value = null)
         }
 
         /// <summary>
-        /// Number of blank lines that preceded the node when parsed.
+        /// Number of blank lines written before the node (see <see cref="WriterOptions.PreserveEmptyLines"/>).
+        /// The parser sets it to the number of blank lines before the value or block name.
         /// </summary>
         public byte LeadingEmptyLines
         {
@@ -455,7 +543,9 @@ public class SimisNode(string? value = null)
         }
 
         /// <summary>
-        /// Number of blank lines that followed the node when parsed.
+        /// Number of blank lines written after the node, after its closing parenthesis when it is a block (see <see cref="WriterOptions.PreserveEmptyLines"/>).
+        /// The parser stores the blank lines found before a closing parenthesis on the block that contains the last value or block name read before it,
+        /// which may be a block nested in the block being closed.
         /// </summary>
         public byte TrailingEmptyLines
         {
@@ -464,7 +554,8 @@ public class SimisNode(string? value = null)
         }
 
         /// <summary>
-        /// True when the node value was originally quoted in the input.
+        /// True when the value was quoted in the parsed text. The writer keeps the quotes when <see cref="WriterOptions.PreserveQuotes"/> is true,
+        /// and quotes a value that needs quotes either way (see <see cref="RequiresQuotes"/>). A quoted block name never makes a comment block (see <see cref="IsComment"/>).
         /// </summary>
         public bool IsQuoted
         {
@@ -483,8 +574,9 @@ public class SimisNode(string? value = null)
         }
 
         /// <summary>
-        /// Returns the node value quoted and escaped when <paramref name="preserveQuotes"/> is true and the value was quoted,
+        /// Returns <paramref name="value"/> quoted and escaped when <paramref name="preserveQuotes"/> is true and the value was quoted,
         /// or when the value cannot be written without quotes (see <see cref="RequiresQuotes"/>).
+        /// Unlike the writer, it neither reuses the text the value was read with nor keeps the quotes that strings joined with <c>+</c> need.
         /// </summary>
         /// <param name="value">The node value.</param>
         /// <param name="preserveQuotes">When true, respect the original quoting state.</param>
@@ -503,6 +595,7 @@ public class SimisNode(string? value = null)
         /// it is empty, or it contains whitespace, a parenthesis, a double quote or a backslash.
         /// </summary>
         /// <param name="value">The node value.</param>
+        /// <returns>True when the value must be quoted.</returns>
         public static bool RequiresQuotes(string value)
         {
             return value.Length == 0 || value.AsSpan().ContainsAny(TokenConfiguration.CharactersRequiringQuotes);
@@ -511,6 +604,8 @@ public class SimisNode(string? value = null)
         /// <summary>
         /// Wraps <paramref name="value"/> in quotes, escaping it (see <see cref="SimisValue.Escape"/>).
         /// </summary>
+        /// <param name="value">The value to quote.</param>
+        /// <returns>The quoted and escaped value.</returns>
         internal static string Quote(string value)
         {
             return $"\"{SimisValue.Escape(value)}\"";

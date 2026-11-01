@@ -24,18 +24,27 @@ public class WriteBenchmarks
     [Params("Engine", "World")]
     public string Sample { get; set; } = "Engine";
 
+    /// <summary>
+    /// Parses the sample text into the tree that is written.
+    /// </summary>
     [GlobalSetup]
     public void Setup()
     {
         document = processor.Parse(Sample == "Engine" ? SampleFiles.Engine() : SampleFiles.World(10_000));
     }
 
+    /// <summary>
+    /// Writes the tree with default options.
+    /// </summary>
     [Benchmark]
     public string Save()
     {
         return processor.Save(document);
     }
 
+    /// <summary>
+    /// Writes the tree with inline and table path patterns, which are matched against every block.
+    /// </summary>
     [Benchmark]
     public string SaveWithPatterns()
     {

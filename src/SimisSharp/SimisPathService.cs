@@ -155,6 +155,10 @@ public static class SimisPathService
     /// <summary>
     /// Returns true when <paramref name="node"/> matches the segment name. A segment without a name matches any node.
     /// </summary>
+    /// <param name="node">The node to test.</param>
+    /// <param name="segmentName">The name part of the segment, which may contain wildcards, or null for an index-only segment.</param>
+    /// <param name="ignoreCase">Whether to ignore case.</param>
+    /// <returns>True when the node matches.</returns>
     private static bool IsMatchForSegment(SimisNode node, string? segmentName, bool ignoreCase)
     {
         if (segmentName == null)

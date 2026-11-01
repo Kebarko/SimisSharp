@@ -19,6 +19,9 @@ public class ReadBenchmarks
     [Params("Engine", "World")]
     public string Sample { get; set; } = "Engine";
 
+    /// <summary>
+    /// Generates the sample text and writes it to a temporary UTF-16 file, as MSTS saves it.
+    /// </summary>
     [GlobalSetup]
     public void Setup()
     {
@@ -27,18 +30,27 @@ public class ReadBenchmarks
         File.WriteAllText(path, text, Encoding.Unicode);
     }
 
+    /// <summary>
+    /// Deletes the temporary file.
+    /// </summary>
     [GlobalCleanup]
     public void Cleanup()
     {
         File.Delete(path);
     }
 
+    /// <summary>
+    /// Parses the sample text into a tree.
+    /// </summary>
     [Benchmark]
     public SimisDocument Parse()
     {
         return processor.Parse(text);
     }
 
+    /// <summary>
+    /// Loads the sample file, decoding and parsing it into a tree.
+    /// </summary>
     [Benchmark]
     public SimisDocument Load()
     {

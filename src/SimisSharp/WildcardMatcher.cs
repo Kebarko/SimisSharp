@@ -8,11 +8,11 @@ namespace KE.MSTS.SimisSharp;
 public static class WildcardMatcher
 {
     /// <summary>
-    /// Determines whether the specified text matches the given pattern, which may include wildcard characters.
+    /// Determines whether the whole of the specified text matches the given pattern, which may include wildcard characters.
     /// </summary>
-    /// <param name="text">The string to test for a match against the pattern. This parameter cannot be null.</param>
-    /// <param name="pattern">The pattern to match the text against. The pattern may contain the wildcard characters '?' to match any single character and '*' to match any sequence of characters, including an empty sequence. This parameter cannot be null.</param>
-    /// <param name="ignoreCase">A boolean value indicating whether the match should ignore case differences between characters.</param>
+    /// <param name="text">The string to test for a match against the pattern. Null never matches.</param>
+    /// <param name="pattern">The pattern to match the text against. The pattern may contain the wildcard characters '?' to match any single character and '*' to match any sequence of characters, including an empty sequence. Null never matches.</param>
+    /// <param name="ignoreCase">A boolean value indicating whether the match should ignore case differences between characters, using the invariant culture.</param>
     /// <returns>true if the text matches the pattern; otherwise, false.</returns>
     public static bool IsMatch(string text, string pattern, bool ignoreCase)
     {
@@ -100,6 +100,13 @@ public static class WildcardMatcher
         return sb.ToString();
     }
 
+    /// <summary>
+    /// Compares two characters, ignoring case with the rules of the invariant culture when <paramref name="ignoreCase"/> is true.
+    /// </summary>
+    /// <param name="c1">The first character.</param>
+    /// <param name="c2">The second character.</param>
+    /// <param name="ignoreCase">Whether to ignore case.</param>
+    /// <returns>True when the characters are equal.</returns>
     private static bool CharsEqual(char c1, char c2, bool ignoreCase)
     {
         return ignoreCase

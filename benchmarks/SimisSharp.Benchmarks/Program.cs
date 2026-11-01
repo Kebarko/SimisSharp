@@ -10,6 +10,10 @@ namespace KE.MSTS.SimisSharp.Benchmarks;
 /// </summary>
 public static class Program
 {
+    /// <summary>
+    /// Runs the benchmarks selected by <paramref name="args"/>, or asks which to run when there are none.
+    /// </summary>
+    /// <param name="args">BenchmarkDotNet command line arguments, such as <c>--filter *</c>.</param>
     public static void Main(string[] args)
     {
         // The library's wildcard assembly version cannot be built by the separate project BenchmarkDotNet generates, so the benchmarks run in this process.

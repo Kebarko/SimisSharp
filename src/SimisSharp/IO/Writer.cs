@@ -11,7 +11,11 @@ internal static class Writer
 {
     /// <summary>
     /// Write the provided document to text according to the options.
+    /// Lines end with <see cref="Environment.NewLine"/>, and text that is not empty ends with a line break.
     /// </summary>
+    /// <param name="document">The document to write.</param>
+    /// <param name="options">Writer options, or null for the defaults.</param>
+    /// <returns>The text of the document.</returns>
     public static string Write(SimisDocument document, WriterOptions? options = null)
     {
         options ??= new();
@@ -27,8 +31,11 @@ internal static class Writer
     }
 
     /// <summary>
-    /// Writes nodes at the document root level.
+    /// Writes nodes at the document root level, leaving out placeholders, and comment blocks unless they are preserved.
     /// </summary>
+    /// <param name="sb">Destination StringBuilder to append to.</param>
+    /// <param name="node">The root node of the document.</param>
+    /// <param name="options">Writer options controlling formatting.</param>
     private static void WriteRootNode(StringBuilder sb, SimisNode node, WriterOptions options)
     {
         IList<SimisNode> subnodes = node.GetNodes(n => !n.IsDummyLeaf && (!n.IsComment || options.PreserveComments));
@@ -172,6 +179,10 @@ internal static class Writer
     /// Resolve the configured column count. If <see cref="TableConfig.Columns"/> contains a number that is parsed, that value is returned; otherwise the value is looked up by path on the node.
     /// The count may come from the file, so the caller limits it to the number of values.
     /// </summary>
+    /// <param name="tableConfig">The table configuration of the node.</param>
+    /// <param name="node">The node written as a table.</param>
+    /// <param name="ignoreCase">Whether to ignore case when following a path.</param>
+    /// <returns>The column count, or 0 when it cannot be found.</returns>
     private static int GetColumns(TableConfig tableConfig, SimisNode node, bool ignoreCase)
     {
         if (int.TryParse(tableConfig.Columns, NumberStyles.Integer, CultureInfo.InvariantCulture, out int columns))
@@ -215,6 +226,10 @@ internal static class Writer
     /// and otherwise when dropping them would change the meaning. A quoted value next to a <c>+</c> is part of a concatenated string,
     /// a quoted <c>+</c> would become the concatenation operator, and a quoted block name that is a comment token would make the block a comment.
     /// </summary>
+    /// <param name="nodes">The nodes written at one level, in document order.</param>
+    /// <param name="index">The index of the node in <paramref name="nodes"/>.</param>
+    /// <param name="preserveQuotes">Whether quotes are preserved (see <see cref="WriterOptions.PreserveQuotes"/>).</param>
+    /// <returns>True when the node value keeps its quotes.</returns>
     private static bool KeepQuotes(IList<SimisNode> nodes, int index, bool preserveQuotes)
     {
         if (preserveQuotes)
@@ -236,6 +251,9 @@ internal static class Writer
     /// <summary>
     /// Returns true when the node at <paramref name="index"/> is an unquoted <c>+</c> value, which joins the quoted strings around it.
     /// </summary>
+    /// <param name="nodes">The nodes written at one level, in document order.</param>
+    /// <param name="index">The index to check, which may be outside <paramref name="nodes"/>.</param>
+    /// <returns>True when the node is an unquoted <c>+</c> value.</returns>
     private static bool IsConcatenationOperator(IList<SimisNode> nodes, int index)
     {
         return index >= 0 && index < nodes.Count && nodes[index] is { IsLeaf: true, Value: "+" } node && !node.IsQuoted;
@@ -245,6 +263,9 @@ internal static class Writer
     /// Returns the text of a node value. A value that is unchanged since it was parsed keeps the text it was read from,
     /// unless its quotes are dropped. Any other value is quoted and escaped when it is quoted or needs quotes.
     /// </summary>
+    /// <param name="node">The node whose value is written.</param>
+    /// <param name="preserveQuotes">Whether a quoted value keeps its quotes (see <see cref="KeepQuotes"/>).</param>
+    /// <returns>The text to write, or an empty string for a node without a value.</returns>
     private static string FormatValue(SimisNode node, bool preserveQuotes)
     {
         string? value = node.Value;
@@ -270,6 +291,10 @@ internal static class Writer
     /// <summary>
     /// Append the requested number of empty lines to the builder, respecting collapse rules.
     /// </summary>
+    /// <param name="sb">Destination StringBuilder to append to.</param>
+    /// <param name="preserveEmptyLines">Whether blank lines are written at all (see <see cref="WriterOptions.PreserveEmptyLines"/>).</param>
+    /// <param name="count">The number of blank lines recorded for the node.</param>
+    /// <param name="collapseEmptyLines">Whether to write at most one blank line (see <see cref="WriterOptions.CollapseEmptyLines"/>).</param>
     private static void WriteEmptyLines(StringBuilder sb, bool preserveEmptyLines, int count, bool collapseEmptyLines)
     {
         if (preserveEmptyLines)
@@ -287,6 +312,8 @@ internal static class Writer
     /// <summary>
     /// Returns true if the current StringBuilder ends with the environment newline sequence.
     /// </summary>
+    /// <param name="sb">The text written so far.</param>
+    /// <returns>True when the text ends with <see cref="Environment.NewLine"/>.</returns>
     private static bool EndsWithNewLine(StringBuilder sb)
     {
         string newLine = Environment.NewLine;

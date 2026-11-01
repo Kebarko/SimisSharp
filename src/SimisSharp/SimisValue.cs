@@ -11,9 +11,15 @@ namespace KE.MSTS.SimisSharp;
 /// </summary>
 public static class SimisValue
 {
+    /// <summary>
+    /// The parts a decimal number may have: surrounding spaces, a sign, thousands separators, a decimal point and an exponent.
+    /// </summary>
     private const NumberStyles NumberStyle = NumberStyles.AllowLeadingWhite | NumberStyles.AllowLeadingSign | NumberStyles.AllowThousands
         | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent | NumberStyles.AllowTrailingWhite;
 
+    /// <summary>
+    /// The parts a hexadecimal number may have: surrounding spaces and hexadecimal digits without a prefix.
+    /// </summary>
     private const NumberStyles HexStyle = NumberStyles.AllowLeadingWhite | NumberStyles.AllowHexSpecifier | NumberStyles.AllowTrailingWhite;
 
     /// <summary>
@@ -93,6 +99,8 @@ public static class SimisValue
     /// <summary>
     /// Parses a number without a unit, such as <c>1.5</c> or <c>-2e3</c>. A trailing comma is ignored, as Open Rails does.
     /// </summary>
+    /// <param name="text">Text to parse.</param>
+    /// <param name="value">The number, or 0 when the text is not a number.</param>
     /// <returns>True when <paramref name="text"/> is a number.</returns>
     public static bool TryParseDouble(string? text, out double value)
     {
@@ -102,6 +110,8 @@ public static class SimisValue
     /// <summary>
     /// Parses a number without a unit, such as <c>1.5</c> or <c>-2e3</c>. A trailing comma is ignored, as Open Rails does.
     /// </summary>
+    /// <param name="text">Text to parse.</param>
+    /// <param name="value">The number, or 0 when the text is not a number.</param>
     /// <returns>True when <paramref name="text"/> is a number.</returns>
     public static bool TryParseDouble(ReadOnlySpan<char> text, out double value)
     {
@@ -113,7 +123,7 @@ public static class SimisValue
     /// Spaces between the number and the unit are skipped, and a <c>#</c> in the unit starts a comment, so <c>220kN#est</c> has the unit <c>kN</c>.
     /// </summary>
     /// <param name="text">Text to parse.</param>
-    /// <param name="value">The number.</param>
+    /// <param name="value">The number, or 0 when the text does not start with a number.</param>
     /// <param name="unit">The unit as written, or an empty string when there is none. Open Rails compares units case-insensitively.</param>
     /// <returns>True when <paramref name="text"/> starts with a number.</returns>
     public static bool TryParseNumber(string? text, out double value, out string unit)
@@ -128,7 +138,7 @@ public static class SimisValue
     /// returning the unit as a part of <paramref name="text"/>.
     /// </summary>
     /// <param name="text">Text to parse.</param>
-    /// <param name="value">The number.</param>
+    /// <param name="value">The number, or 0 when the text does not start with a number.</param>
     /// <param name="unit">The unit as written, or an empty span when there is none.</param>
     /// <returns>True when <paramref name="text"/> starts with a number.</returns>
     public static bool TryParseNumber(ReadOnlySpan<char> text, out double value, out ReadOnlySpan<char> unit)
@@ -152,6 +162,8 @@ public static class SimisValue
     /// <summary>
     /// Parses a signed 32-bit integer, such as <c>-7</c>. A trailing comma is ignored, as Open Rails does.
     /// </summary>
+    /// <param name="text">Text to parse.</param>
+    /// <param name="value">The integer, or 0 when the text is not an integer in range.</param>
     /// <returns>True when <paramref name="text"/> is an integer in range.</returns>
     public static bool TryParseInt32(string? text, out int value)
     {
@@ -161,6 +173,8 @@ public static class SimisValue
     /// <summary>
     /// Parses a signed 32-bit integer, such as <c>-7</c>. A trailing comma is ignored, as Open Rails does.
     /// </summary>
+    /// <param name="text">Text to parse.</param>
+    /// <param name="value">The integer, or 0 when the text is not an integer in range.</param>
     /// <returns>True when <paramref name="text"/> is an integer in range.</returns>
     public static bool TryParseInt32(ReadOnlySpan<char> text, out int value)
     {
@@ -170,6 +184,8 @@ public static class SimisValue
     /// <summary>
     /// Parses an unsigned 32-bit integer, such as <c>4294967295</c>. A trailing comma is ignored, as Open Rails does.
     /// </summary>
+    /// <param name="text">Text to parse.</param>
+    /// <param name="value">The integer, or 0 when the text is not an unsigned integer in range.</param>
     /// <returns>True when <paramref name="text"/> is an unsigned integer in range.</returns>
     public static bool TryParseUInt32(string? text, out uint value)
     {
@@ -179,6 +195,8 @@ public static class SimisValue
     /// <summary>
     /// Parses an unsigned 32-bit integer, such as <c>4294967295</c>. A trailing comma is ignored, as Open Rails does.
     /// </summary>
+    /// <param name="text">Text to parse.</param>
+    /// <param name="value">The integer, or 0 when the text is not an unsigned integer in range.</param>
     /// <returns>True when <paramref name="text"/> is an unsigned integer in range.</returns>
     public static bool TryParseUInt32(ReadOnlySpan<char> text, out uint value)
     {
@@ -188,6 +206,8 @@ public static class SimisValue
     /// <summary>
     /// Parses a hexadecimal number without a prefix, such as <c>ff00ff00</c>.
     /// </summary>
+    /// <param name="text">Text to parse.</param>
+    /// <param name="value">The number, or 0 when the text is not a hexadecimal number in range.</param>
     /// <returns>True when <paramref name="text"/> is a hexadecimal number in range.</returns>
     public static bool TryParseHex(string? text, out uint value)
     {
@@ -197,6 +217,8 @@ public static class SimisValue
     /// <summary>
     /// Parses a hexadecimal number without a prefix, such as <c>ff00ff00</c>.
     /// </summary>
+    /// <param name="text">Text to parse.</param>
+    /// <param name="value">The number, or 0 when the text is not a hexadecimal number in range.</param>
     /// <returns>True when <paramref name="text"/> is a hexadecimal number in range.</returns>
     public static bool TryParseHex(ReadOnlySpan<char> text, out uint value)
     {
@@ -206,6 +228,8 @@ public static class SimisValue
     /// <summary>
     /// Parses a boolean: <c>true</c> or <c>false</c> in any letter case, or an integer where any value other than zero is true.
     /// </summary>
+    /// <param name="text">Text to parse.</param>
+    /// <param name="value">The boolean, or false when the text is not a boolean.</param>
     /// <returns>True when <paramref name="text"/> is a boolean.</returns>
     public static bool TryParseBoolean(string? text, out bool value)
     {
@@ -215,6 +239,8 @@ public static class SimisValue
     /// <summary>
     /// Parses a boolean: <c>true</c> or <c>false</c> in any letter case, or an integer where any value other than zero is true.
     /// </summary>
+    /// <param name="text">Text to parse.</param>
+    /// <param name="value">The boolean, or false when the text is not a boolean.</param>
     /// <returns>True when <paramref name="text"/> is a boolean.</returns>
     public static bool TryParseBoolean(ReadOnlySpan<char> text, out bool value)
     {
@@ -239,6 +265,9 @@ public static class SimisValue
     /// Formats a number with an optional unit, such as <c>12.5t</c>, using the shortest text that reads back as the same number.
     /// Numbers below 1e-5 or from 1e15 in magnitude are written with an exponent.
     /// </summary>
+    /// <param name="value">The number.</param>
+    /// <param name="unit">The unit written after the number, such as <c>t</c> or <c>kN</c>, or null for none.</param>
+    /// <returns>The formatted value.</returns>
     /// <exception cref="ArgumentOutOfRangeException">When <paramref name="value"/> is not finite.</exception>
     /// <exception cref="ArgumentException">When <paramref name="unit"/> would not be read back as the same unit.</exception>
     public static string Format(double value, string? unit = null)
@@ -252,6 +281,9 @@ public static class SimisValue
     /// <summary>
     /// Formats a single precision number with an optional unit, using the shortest text that reads back as the same number.
     /// </summary>
+    /// <param name="value">The number.</param>
+    /// <param name="unit">The unit written after the number, such as <c>t</c> or <c>kN</c>, or null for none.</param>
+    /// <returns>The formatted value.</returns>
     /// <exception cref="ArgumentOutOfRangeException">When <paramref name="value"/> is not finite.</exception>
     /// <exception cref="ArgumentException">When <paramref name="unit"/> would not be read back as the same unit.</exception>
     public static string Format(float value, string? unit = null)
@@ -265,6 +297,9 @@ public static class SimisValue
     /// <summary>
     /// Formats an integer with an optional unit, such as <c>42</c> or <c>800kW</c>.
     /// </summary>
+    /// <param name="value">The integer.</param>
+    /// <param name="unit">The unit written after the integer, such as <c>kW</c>, or null for none.</param>
+    /// <returns>The formatted value.</returns>
     /// <exception cref="ArgumentException">When <paramref name="unit"/> would not be read back as the same unit.</exception>
     public static string Format(long value, string? unit = null)
     {
@@ -274,6 +309,9 @@ public static class SimisValue
     /// <summary>
     /// Formats a hexadecimal number without a prefix, in lower case, padded with zeros to <paramref name="digits"/> digits.
     /// </summary>
+    /// <param name="value">The number.</param>
+    /// <param name="digits">The minimum number of digits.</param>
+    /// <returns>The formatted value.</returns>
     /// <exception cref="ArgumentOutOfRangeException">When <paramref name="digits"/> is negative.</exception>
     public static string FormatHex(uint value, int digits = 8)
     {

@@ -27,7 +27,7 @@ internal static class TokenConfiguration
     /// MSTS and Open Rails ignore the block after the keywords <c>comment</c> and <c>skip</c> in any letter case,
     /// and after any token that begins with <c>#</c> or <c>_</c>, such as <c>_skip</c>, <c>_info</c> or <c>#ORTSMaxPower</c>.
     /// </summary>
-    /// <param name="token">Raw token text. A quoted token includes its quotes, so it never starts a comment.</param>
+    /// <param name="token">Token text without quotes. A quoted token never starts a comment, so callers check that the token is not quoted.</param>
     /// <returns>True when the token starts a comment block if it is followed by a block.</returns>
     public static bool IsCommentToken(ReadOnlySpan<char> token)
     {
@@ -49,6 +49,7 @@ internal static class TokenConfiguration
     /// <summary>
     /// Returns every character <see cref="char.IsWhiteSpace(char)"/> accepts.
     /// </summary>
+    /// <returns>The whitespace characters in ascending order.</returns>
     private static IEnumerable<char> WhiteSpace()
     {
         for (int c = char.MinValue; c <= char.MaxValue; c++)
