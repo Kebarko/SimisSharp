@@ -1,4 +1,5 @@
 ﻿using KE.MSTS.SimisSharp.IO;
+using System.IO.Compression;
 using System.Text;
 
 namespace KE.MSTS.SimisSharp.Tests;
@@ -126,8 +127,7 @@ public class SimisProcessorTest
     [Theory]
     [InlineData("SIMISA@@@@@@@@@@JINX0s1b______")]
     [InlineData("SIMISA@@@@@@@@@@JINX0w2b______")]
-    [InlineData("SIMISA@F\u0010\0\0\0@@@@")]
-    public void LoadRejectsBinaryAndCompressedFiles(string header)
+    public void LoadRejectsBinaryFiles(string header)
     {
         // Arrange: the payload is plain ASCII, so only the header tells the file is not text.
         byte[] content = [.. Encoding.Latin1.GetBytes(header), .. Encoding.ASCII.GetBytes("\r\nWagon ( Mass ( 10t ) )\r\n")];
@@ -152,6 +152,75 @@ public class SimisProcessorTest
         // Assert
         Assert.Equal(header, document.Root.Nodes[0].Value);
         Assert.Equal("10t", Assert.Single(SimisPathService.FindNodesByPath(document.Root, "/Wagon/Mass/[1]")).Value);
+    }
+
+    [Theory]
+    [InlineData("utf-8", false)]
+    [InlineData("utf-8", true)]
+    [InlineData("utf-16", false)]
+    [InlineData("utf-16", true)]
+    public void LoadsCompressedFile(string encodingName, bool withByteOrderMark)
+    {
+        // Arrange
+        byte[] content = CompressedFile(NonAsciiText, Encoding.GetEncoding(encodingName), withByteOrderMark);
+
+        // Act
+        string text = WithTempFile(content, processor.LoadText);
+
+        // Assert: the text is that of the uncompressed file, header included.
+        Assert.Equal(NonAsciiText, text);
+        AssertNonAsciiDocument(processor.Parse(text));
+    }
+
+    [Fact]
+    public void LoadsCompressedAnsiFileWithGivenEncoding()
+    {
+        // Arrange
+        byte[] content = CompressedFile(NonAsciiText, CentralEuropeanAnsi, withByteOrderMark: false);
+
+        // Act
+        SimisDocument document = WithTempFile(content, path => processor.Load(path, CentralEuropeanAnsi));
+
+        // Assert
+        Assert.Equal("SIMISA@@@@@@@@@@JINX0D0t______", document.Root.Nodes[0].Value);
+        AssertNonAsciiDocument(document);
+    }
+
+    [Theory]
+    [InlineData("JINX0s1b______\r\n")]
+    [InlineData("JINX0w2b______\r\n")]
+    [InlineData("\u0001\0\0\0\u0001\0\0\0\u0010\0\0\0\u0010\0\0\0")]
+    public void LoadRejectsCompressedFilesWithoutText(string subheader)
+    {
+        // Arrange: the second case starts like a texture.
+        byte[] content = Compress([.. Encoding.Latin1.GetBytes(subheader), .. Encoding.ASCII.GetBytes("\r\nWagon ( Mass ( 10t ) )\r\n")]);
+
+        // Act & Assert
+        Assert.Throws<NotSupportedException>(() => WithTempFile(content, processor.Load));
+    }
+
+    [Theory]
+    [InlineData("SIMISA@F")]
+    [InlineData("SIMISA@F\u0010\0\0\0@@@@")]
+    [InlineData("SIMISA@F\u0010\0\0\0@@@@\r\nWagon ( Mass ( 10t ) )\r\n")]
+    public void LoadRejectsDamagedCompressedFiles(string file)
+    {
+        // Arrange: the files are truncated, or the data after the header is not compressed.
+        byte[] content = Encoding.Latin1.GetBytes(file);
+
+        // Act & Assert
+        Assert.Throws<FormatException>(() => WithTempFile(content, processor.Load));
+    }
+
+    [Fact]
+    public void LoadRejectsCompressedFileWithWrongChecksum()
+    {
+        // Arrange
+        byte[] content = CompressedFile(Text, Encoding.ASCII, withByteOrderMark: false);
+        content[^1] ^= 0xFF;
+
+        // Act & Assert
+        Assert.Throws<FormatException>(() => WithTempFile(content, processor.Load));
     }
 
     [Fact]
@@ -420,6 +489,35 @@ public class SimisProcessorTest
     private static void AssertNonAsciiDocument(SimisDocument document)
     {
         Assert.Equal("Lokomotíva Škoda", Assert.Single(SimisPathService.FindNodesByPath(document.Root, "/Wagon/Name/[1]")).Value);
+    }
+
+    /// <summary>
+    /// Returns the compressed file MSTS reads in place of the uncompressed <paramref name="text"/>.
+    /// The ASCII subheader that follows the <c>SIMISA@@@@@@@@@@</c> header is kept, and the rest is encoded with <paramref name="encoding"/>.
+    /// </summary>
+    private static byte[] CompressedFile(string text, Encoding encoding, bool withByteOrderMark)
+    {
+        const int HeaderLength = 16;
+        const int SubheaderLength = 16;
+
+        string subheader = text.Substring(HeaderLength, SubheaderLength);
+        string rest = text[(HeaderLength + SubheaderLength)..];
+
+        return Compress([.. Encoding.ASCII.GetBytes(subheader), .. withByteOrderMark ? encoding.GetPreamble() : [], .. encoding.GetBytes(rest)]);
+    }
+
+    /// <summary>
+    /// Returns a compressed file holding <paramref name="data"/>: the header with the uncompressed length, followed by a zlib stream.
+    /// </summary>
+    private static byte[] Compress(byte[] data)
+    {
+        MemoryStream compressed = new();
+        using (ZLibStream zlib = new(compressed, CompressionLevel.Optimal, leaveOpen: true))
+        {
+            zlib.Write(data);
+        }
+
+        return [.. "SIMISA@F"u8, .. BitConverter.GetBytes(data.Length), .. "@@@@"u8, .. compressed.ToArray()];
     }
 
     private static void WithTempDirectory(Action<string> action)

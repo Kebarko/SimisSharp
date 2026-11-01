@@ -1,12 +1,39 @@
-﻿using System.Text;
+﻿using System.IO.Compression;
+using System.Text;
 
 namespace KE.MSTS.SimisSharp.IO;
 
 /// <summary>
 /// Decodes the bytes of a text SIMIS file. MSTS writes UTF-16LE with a byte order mark, while Open Rails also reads UTF-8 and ASCII files.
+/// A compressed file is decompressed first.
 /// </summary>
 internal static class SimisTextDecoder
 {
+    /// <summary>
+    /// The header of an uncompressed file. A compressed file has another header in its place.
+    /// </summary>
+    private const string UncompressedHeader = "SIMISA@@@@@@@@@@";
+
+    /// <summary>
+    /// Length of the header of a compressed file: <c>SIMISA@F</c>, the uncompressed length as a 32-bit integer and <c>@@@@</c>.
+    /// </summary>
+    private const int CompressedHeaderLength = 16;
+
+    /// <summary>
+    /// Length of the subheader that follows the header, such as <c>JINX0D0t______</c> and a line break.
+    /// </summary>
+    private const int SubheaderLength = 16;
+
+    /// <summary>
+    /// Index of the format letter in the subheader: <c>b</c> for binary or <c>t</c> for text.
+    /// </summary>
+    private const int FormatIndex = 7;
+
+    /// <summary>
+    /// Message of the exception thrown for a binary file.
+    /// </summary>
+    private const string BinaryNotSupported = "Binary SIMIS files are not supported, compressed or not. Only text SIMIS files can be read.";
+
     /// <summary>
     /// Strict UTF-8 decoder, which throws on invalid bytes instead of replacing them, so that text in another encoding is reported rather than misread.
     /// </summary>
@@ -61,17 +88,88 @@ internal static class SimisTextDecoder
     /// Decodes <paramref name="bytes"/> to text. A byte order mark selects UTF-8, UTF-16 or UTF-32.
     /// Without one, text whose first or second byte is zero is UTF-16, because a SIMIS file starts with an ASCII character,
     /// and other text is decoded with <paramref name="encoding"/>, which defaults to UTF-8.
+    /// A compressed file is decompressed first (see <see cref="DecodeCompressed"/>).
     /// </summary>
     /// <param name="bytes">Content of the file.</param>
     /// <param name="encoding">Encoding of text that has no byte order mark and is not UTF-16, such as an ANSI file. Defaults to UTF-8.</param>
     /// <returns>The decoded text without the byte order mark.</returns>
-    /// <exception cref="NotSupportedException">When the bytes are a binary or compressed SIMIS file.</exception>
-    /// <exception cref="FormatException">When the bytes are not valid text in the detected encoding.</exception>
-    public static string Decode(ReadOnlySpan<byte> bytes, Encoding? encoding = null)
+    /// <exception cref="NotSupportedException">When the bytes are a binary SIMIS file, compressed or not, or a compressed file that does not hold SIMIS text.</exception>
+    /// <exception cref="FormatException">When the bytes are not valid text in the detected encoding, or the compressed data is truncated or corrupt.</exception>
+    public static string Decode(byte[] bytes, Encoding? encoding = null)
     {
-        if (IsBinaryOrCompressed(bytes))
-            throw new NotSupportedException("Binary and compressed SIMIS files are not supported. Only text SIMIS files can be read.");
+        if (bytes.AsSpan().StartsWith("SIMISA@F"u8))
+            return DecodeCompressed(bytes, encoding);
 
+        if (IsBinary(bytes))
+            throw new NotSupportedException(BinaryNotSupported);
+
+        return DecodeText(bytes, encoding);
+    }
+
+    /// <summary>
+    /// Decompresses a compressed file and decodes its text as Open Rails does. The 16-byte header of a compressed file is <c>SIMISA@F</c>,
+    /// the uncompressed length as a 32-bit integer, which is not needed, and <c>@@@@</c>. A zlib stream follows, which holds the rest of the file
+    /// as an uncompressed file has it: the ASCII subheader, such as <c>JINX0D0t______</c> and a line break, and the content.
+    /// The text after the subheader is decoded as <see cref="Decode"/> decodes a file.
+    /// </summary>
+    /// <param name="bytes">Content of the file, which starts with <c>SIMISA@F</c>.</param>
+    /// <param name="encoding">Encoding of text that has no byte order mark and is not UTF-16, or null for UTF-8.</param>
+    /// <returns>The text an uncompressed file with the same content has, which starts with <c>SIMISA@@@@@@@@@@</c>.</returns>
+    /// <exception cref="NotSupportedException">When the file holds binary data rather than text.</exception>
+    /// <exception cref="FormatException">When the file is truncated or corrupt, or its text is not valid in the detected encoding.</exception>
+    private static string DecodeCompressed(byte[] bytes, Encoding? encoding)
+    {
+        ReadOnlySpan<byte> data = Decompress(bytes);
+        if (data.IsEmpty)
+            throw new FormatException("The compressed file is truncated.");
+
+        byte format = GetFormat(data);
+        if (format == 'b')
+            throw new NotSupportedException(BinaryNotSupported);
+
+        if (format != 't')
+            throw new NotSupportedException("The compressed file does not hold SIMIS text. Only text SIMIS files can be read.");
+
+        ReadOnlySpan<byte> subheader = data[..Math.Min(SubheaderLength, data.Length)];
+        return string.Concat(UncompressedHeader, Encoding.Latin1.GetString(subheader), DecodeText(data[subheader.Length..], encoding));
+    }
+
+    /// <summary>
+    /// Decompresses the zlib stream that follows the header of a compressed file.
+    /// <see cref="ZLibStream"/> does not report data that ends early, so a truncated file decompresses to less data without an error.
+    /// </summary>
+    /// <param name="bytes">Content of the file, which starts with <c>SIMISA@F</c>.</param>
+    /// <returns>The decompressed data, which is empty when the file has no data after the header.</returns>
+    /// <exception cref="FormatException">When the compressed data is corrupt.</exception>
+    private static ReadOnlySpan<byte> Decompress(byte[] bytes)
+    {
+        if (bytes.Length <= CompressedHeaderLength)
+            return [];
+
+        MemoryStream data = new();
+        try
+        {
+            using MemoryStream compressed = new(bytes, CompressedHeaderLength, bytes.Length - CompressedHeaderLength, writable: false);
+            using ZLibStream zlib = new(compressed, CompressionMode.Decompress);
+            zlib.CopyTo(data);
+        }
+        catch (InvalidDataException ex)
+        {
+            throw new FormatException("The compressed data of the file is corrupt.", ex);
+        }
+
+        return data.GetBuffer().AsSpan(0, (int)data.Length);
+    }
+
+    /// <summary>
+    /// Decodes text without a SIMIS header check, as <see cref="Decode"/> describes.
+    /// </summary>
+    /// <param name="bytes">The text to decode.</param>
+    /// <param name="encoding">Encoding of text that has no byte order mark and is not UTF-16, or null for UTF-8.</param>
+    /// <returns>The decoded text without the byte order mark.</returns>
+    /// <exception cref="FormatException">When the bytes are not valid text in the detected encoding.</exception>
+    private static string DecodeText(ReadOnlySpan<byte> bytes, Encoding? encoding)
+    {
         (Encoding detected, int bomLength) = DetectEncoding(bytes, encoding);
 
         try
@@ -89,21 +187,25 @@ internal static class SimisTextDecoder
     }
 
     /// <summary>
-    /// Returns true when <paramref name="bytes"/> start with the ASCII header of a binary or compressed SIMIS file.
-    /// A compressed file starts with <c>SIMISA@F</c>. An uncompressed file starts with <c>SIMISA@@@@@@@@@@JINX0</c>,
-    /// followed by a two-character file type and <c>b</c> for binary or <c>t</c> for text, as in <c>JINX0s1b</c>.
+    /// Returns true when <paramref name="bytes"/> start with the ASCII header of an uncompressed binary SIMIS file:
+    /// <c>SIMISA@@@@@@@@@@</c> and a subheader for binary data, such as <c>JINX0s1b</c>.
     /// </summary>
     /// <param name="bytes">Content of the file.</param>
-    /// <returns>True when the file is binary or compressed.</returns>
-    private static bool IsBinaryOrCompressed(ReadOnlySpan<byte> bytes)
+    /// <returns>True when the file is binary.</returns>
+    private static bool IsBinary(ReadOnlySpan<byte> bytes)
     {
-        if (bytes.StartsWith("SIMISA@F"u8))
-            return true;
+        return bytes.StartsWith("SIMISA@@@@@@@@@@"u8) && GetFormat(bytes[UncompressedHeader.Length..]) == 'b';
+    }
 
-        ReadOnlySpan<byte> header = "SIMISA@@@@@@@@@@JINX0"u8;
-        int formatIndex = header.Length + 2;
-
-        return bytes.StartsWith(header) && bytes.Length > formatIndex && bytes[formatIndex] == (byte)'b';
+    /// <summary>
+    /// Returns the format letter of the ASCII subheader that <paramref name="data"/> starts with. The subheader is <c>JINX0</c>,
+    /// a two-character file type and <c>b</c> for binary or <c>t</c> for text, as in <c>JINX0s1b</c>.
+    /// </summary>
+    /// <param name="data">The data that follows the SIMIS header.</param>
+    /// <returns>The format letter, or 0 when <paramref name="data"/> does not start with a subheader.</returns>
+    private static byte GetFormat(ReadOnlySpan<byte> data)
+    {
+        return data.StartsWith("JINX0"u8) && data.Length > FormatIndex ? data[FormatIndex] : (byte)0;
     }
 
     /// <summary>

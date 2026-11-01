@@ -25,6 +25,7 @@ public class SimisProcessor
     /// Serialize the document and write it to <paramref name="filePath"/> as UTF-16LE with a byte order mark, the encoding MSTS reads.
     /// The text is written to a temporary file in the same folder first, which then replaces the target in one step,
     /// so a failure while writing leaves an existing file unchanged. Replacing an existing file keeps its attributes.
+    /// The file is not compressed, also when the document was loaded from a compressed file.
     /// </summary>
     /// <param name="document">Document to save.</param>
     /// <param name="filePath">Target file path to create/overwrite.</param>
@@ -94,13 +95,15 @@ public class SimisProcessor
     /// Load and parse a text document from disk, detecting its encoding.
     /// A byte order mark selects UTF-8, UTF-16 or UTF-32. A file without one is read as UTF-16 when its first or second byte is zero,
     /// and as UTF-8 otherwise, which also covers ASCII.
+    /// A compressed file, whose header starts with <c>SIMISA@F</c>, is decompressed first. Its text after the subheader, such as <c>JINX0D0t______</c>,
+    /// is decoded the same way, and the document gets the header of an uncompressed file, <c>SIMISA@@@@@@@@@@</c>, so it is saved uncompressed.
     /// </summary>
     /// <param name="filePath">Path to the file to open.</param>
     /// <returns>Parsed document AST.</returns>
     /// <exception cref="IOException">When the file cannot be read, such as when it does not exist.</exception>
     /// <exception cref="UnauthorizedAccessException">When reading the file is not permitted.</exception>
-    /// <exception cref="NotSupportedException">When the file is a binary or compressed SIMIS file.</exception>
-    /// <exception cref="FormatException">When the file is not valid text in the detected encoding.</exception>
+    /// <exception cref="NotSupportedException">When the file is a binary SIMIS file, compressed or not, or a compressed file that does not hold SIMIS text.</exception>
+    /// <exception cref="FormatException">When the file is not valid text in the detected encoding, or its compressed data is corrupt.</exception>
     /// <exception cref="SimisParseException">When the text is not well-formed (see <see cref="Parse(string)"/>).</exception>
     public SimisDocument Load(string filePath)
     {
@@ -117,8 +120,8 @@ public class SimisProcessor
     /// <returns>Parsed document AST.</returns>
     /// <exception cref="IOException">When the file cannot be read, such as when it does not exist.</exception>
     /// <exception cref="UnauthorizedAccessException">When reading the file is not permitted.</exception>
-    /// <exception cref="NotSupportedException">When the file is a binary or compressed SIMIS file.</exception>
-    /// <exception cref="FormatException">When the file is not valid text in the detected encoding.</exception>
+    /// <exception cref="NotSupportedException">When the file is a binary SIMIS file, compressed or not, or a compressed file that does not hold SIMIS text.</exception>
+    /// <exception cref="FormatException">When the file is not valid text in the detected encoding, or its compressed data is corrupt.</exception>
     /// <exception cref="SimisParseException">When the text is not well-formed (see <see cref="Parse(string)"/>).</exception>
     public SimisDocument Load(string filePath, Encoding? encoding)
     {
@@ -130,11 +133,11 @@ public class SimisProcessor
     /// Use it with a <see cref="SimisReader"/> to read a file without building a tree.
     /// </summary>
     /// <param name="filePath">Path to the file to open.</param>
-    /// <returns>The text of the file without the byte order mark.</returns>
+    /// <returns>The text of the file without the byte order mark. The text of a compressed file is the text the uncompressed file has.</returns>
     /// <exception cref="IOException">When the file cannot be read, such as when it does not exist.</exception>
     /// <exception cref="UnauthorizedAccessException">When reading the file is not permitted.</exception>
-    /// <exception cref="NotSupportedException">When the file is a binary or compressed SIMIS file.</exception>
-    /// <exception cref="FormatException">When the file is not valid text in the detected encoding.</exception>
+    /// <exception cref="NotSupportedException">When the file is a binary SIMIS file, compressed or not, or a compressed file that does not hold SIMIS text.</exception>
+    /// <exception cref="FormatException">When the file is not valid text in the detected encoding, or its compressed data is corrupt.</exception>
     public string LoadText(string filePath)
     {
         return LoadText(filePath, null);
@@ -145,11 +148,11 @@ public class SimisProcessor
     /// </summary>
     /// <param name="filePath">Path to the file to open.</param>
     /// <param name="encoding">Encoding of a file without a byte order mark that is not UTF-16, such as an ANSI file. Null means UTF-8.</param>
-    /// <returns>The text of the file without the byte order mark.</returns>
+    /// <returns>The text of the file without the byte order mark. The text of a compressed file is the text the uncompressed file has.</returns>
     /// <exception cref="IOException">When the file cannot be read, such as when it does not exist.</exception>
     /// <exception cref="UnauthorizedAccessException">When reading the file is not permitted.</exception>
-    /// <exception cref="NotSupportedException">When the file is a binary or compressed SIMIS file.</exception>
-    /// <exception cref="FormatException">When the file is not valid text in the detected encoding.</exception>
+    /// <exception cref="NotSupportedException">When the file is a binary SIMIS file, compressed or not, or a compressed file that does not hold SIMIS text.</exception>
+    /// <exception cref="FormatException">When the file is not valid text in the detected encoding, or its compressed data is corrupt.</exception>
     public string LoadText(string filePath, Encoding? encoding)
     {
         byte[] bytes = File.ReadAllBytes(filePath);
