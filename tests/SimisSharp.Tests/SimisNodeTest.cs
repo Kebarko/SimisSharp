@@ -37,4 +37,38 @@ public class SimisNodeTest
         Assert.Equal(expected, parent.GetNodes().Select(n => n.Value));
         Assert.All(children, c => Assert.Equal(expected.Contains(c.Value) ? parent : null, c.Parent));
     }
+
+    [Fact]
+    public void LookupsIgnoreCaseByDefault()
+    {
+        // Arrange
+        SimisNode wagon = new SimisProcessor().Parse("Wagon ( mass ( 10t ) MASS ( 12t ) Lights ( 1 ) )").Root.Nodes[0];
+
+        // Act
+        SimisNode? first = wagon.GetNode("Mass");
+        IList<SimisNode> all = wagon.GetNodes("Mass");
+        wagon.RemoveNode("mASS");
+
+        // Assert
+        Assert.Equal("mass", first?.Value);
+        Assert.Equal(["mass", "MASS"], all.Select(n => n.Value));
+        Assert.Equal(["Lights"], wagon.Nodes.Select(n => n.Value));
+    }
+
+    [Fact]
+    public void LookupsRespectGivenComparison()
+    {
+        // Arrange
+        SimisNode wagon = new SimisProcessor().Parse("Wagon ( mass ( 10t ) Mass ( 12t ) )").Root.Nodes[0];
+
+        // Act
+        SimisNode? exact = wagon.GetNode("Mass", StringComparison.Ordinal);
+        int count = wagon.GetNodes("Mass", StringComparison.Ordinal).Count;
+        wagon.RemoveNode("Mass", StringComparison.Ordinal);
+
+        // Assert
+        Assert.Equal("Mass", exact?.Value);
+        Assert.Equal(1, count);
+        Assert.Equal(["mass"], wagon.Nodes.Select(n => n.Value));
+    }
 }

@@ -166,16 +166,18 @@ public class SimisNode(string? value = null)
 
     /// <summary>
     /// Find all child nodes with the specified <paramref name="value"/> using the given string comparison.
+    /// By default letter case is ignored, as MSTS and Open Rails do.
     /// </summary>
-    public IList<SimisNode> GetNodes(string value, StringComparison comparisonType = StringComparison.Ordinal)
+    public IList<SimisNode> GetNodes(string value, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase)
     {
         return subnodes.Where(c => string.Equals(c.Value, value, comparisonType)).ToList();
     }
 
     /// <summary>
     /// Find the first child with the specified <paramref name="value"/> using the given string comparison, or null if none found.
+    /// By default letter case is ignored, as MSTS and Open Rails do.
     /// </summary>
-    public SimisNode? GetNode(string value, StringComparison comparisonType = StringComparison.Ordinal)
+    public SimisNode? GetNode(string value, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase)
     {
         return subnodes.FirstOrDefault(c => string.Equals(c.Value, value, comparisonType));
     }
@@ -266,9 +268,10 @@ public class SimisNode(string? value = null)
 
     /// <summary>
     /// Removes all child nodes that have the specified value using the given string comparison.
+    /// By default letter case is ignored, as MSTS and Open Rails do.
     /// A block that loses its last child stays an empty block (see <see cref="IsDummyLeaf"/>).
     /// </summary>
-    public void RemoveNode(string value, StringComparison comparisonType = StringComparison.Ordinal)
+    public void RemoveNode(string value, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase)
     {
         bool removed = false;
         for (int i = subnodes.Count - 1; i >= 0; i--)
