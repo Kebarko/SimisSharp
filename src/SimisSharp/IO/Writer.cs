@@ -60,7 +60,7 @@ internal class Writer : IWriter
         else
             sb.Append(indent);
 
-        sb.Append(node.Formatting.GetQuotedValue(node.Value, options.PreserveQuotes));
+        sb.Append(FormatValue(node, options.PreserveQuotes));
 
         if (!inline && options.Inline.Any(path => SimisPathService.IsMatchForPath(node, path, options.IgnoreCase)))
         {
@@ -114,7 +114,7 @@ internal class Writer : IWriter
                                 sb.Append(tableConfig.ColumnSeparator);
                             }
 
-                            string value = subnode.Formatting.GetQuotedValue(subnode.Value, options.PreserveQuotes);
+                            string value = FormatValue(subnode, options.PreserveQuotes);
                             if (columnWidths.Length > currentColumn && value.Length < columnWidths[currentColumn])
                             {
                                 value = value.PadLeft(columnWidths[currentColumn]);
@@ -133,7 +133,7 @@ internal class Writer : IWriter
                         else
                         {
                             sb.Append(' ');
-                            sb.Append(subnode.Formatting.GetQuotedValue(subnode.Value, options.PreserveQuotes));
+                            sb.Append(FormatValue(subnode, options.PreserveQuotes));
                         }
                     }
                 }
@@ -198,8 +198,7 @@ internal class Writer : IWriter
         {
             for (int nodeIdx = colIdx + offset; nodeIdx < nodes.Count; nodeIdx += totalColumns)
             {
-                SimisNode node = nodes[nodeIdx];
-                string value = node.Formatting.GetQuotedValue(node.Value, preserveQuotes);
+                string value = FormatValue(nodes[nodeIdx], preserveQuotes);
 
                 if (value.Length > result[colIdx])
                     result[colIdx] = value.Length;
@@ -207,6 +206,32 @@ internal class Writer : IWriter
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// Returns the text of a node value. A value that is unchanged since it was parsed keeps the text it was read from,
+    /// unless its quotes are dropped. Any other value is quoted and escaped when it is quoted or needs quotes.
+    /// </summary>
+    private static string FormatValue(SimisNode node, bool preserveQuotes)
+    {
+        string? value = node.Value;
+        if (value is null)
+            return string.Empty;
+
+        bool keepQuotes = preserveQuotes && node.Formatting.IsQuoted;
+        bool quote = keepQuotes || SimisNode.SimisNodeFormatting.RequiresQuotes(value);
+
+        string? original = node.OriginalText;
+        if (original != null)
+        {
+            bool originalIsQuoted = original.Length > 0 && original[0] == '"';
+
+            // A quoted token is reused while it stays quoted. An unquoted token reads back as the same value.
+            if (originalIsQuoted ? quote : !keepQuotes)
+                return original;
+        }
+
+        return quote ? SimisNode.SimisNodeFormatting.Quote(value) : value;
     }
 
     /// <summary>

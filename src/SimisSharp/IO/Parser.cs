@@ -79,13 +79,15 @@ internal class Parser : IParser
             {
                 if (token.Length > 1 && token[0] == '"' && token[^1] == '"')
                 {
-                    node = new(token[1..^1]);
+                    node = new(SimisValue.Unescape(token.AsSpan(1, token.Length - 2)));
                     node.Formatting.IsQuoted = true;
                 }
                 else
                 {
                     node = new(token);
                 }
+
+                node.OriginalText = token;
 
                 isCommentHead = TokenConfiguration.IsCommentToken(token);
                 node.Formatting.IsOnSameLineAsPrevious = !parent.IsLeaf && newLines == 0;

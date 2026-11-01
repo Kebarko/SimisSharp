@@ -17,7 +17,8 @@ public class SimisNode(string? value = null)
     /// <summary>
     /// The value of the node: a token, a block name, or the verbatim content of a comment block.
     /// Null for dummy nodes (including the root and empty placeholders).
-    /// The value is raw text, so escape sequences in quoted values, such as <c>\"</c>, are kept as written.
+    /// The escape sequences of a quoted value are decoded (see <see cref="SimisValue.Unescape"/>), so <c>"C:\\Routes"</c> has the value <c>C:\Routes</c>.
+    /// An unquoted value is kept as written. The writer quotes and escapes a value when it needs to.
     /// Renaming a block can turn it into a comment block or back (see <see cref="IsComment"/>).
     /// </summary>
     /// <exception cref="ArgumentNullException">When setting null.</exception>
@@ -25,8 +26,23 @@ public class SimisNode(string? value = null)
     public string? Value
     {
         get;
-        set => field = value ?? throw new ArgumentNullException(nameof(value));
+        set
+        {
+            ArgumentNullException.ThrowIfNull(value);
+
+            if (!string.Equals(field, value, StringComparison.Ordinal))
+            {
+                field = value;
+                OriginalText = null;
+            }
+        }
     } = value;
+
+    /// <summary>
+    /// The token as it was written in the parsed text, including quotes, while <see cref="Value"/> is unchanged.
+    /// The writer reuses it so that unchanged values are written exactly as they were read.
+    /// </summary>
+    internal string? OriginalText { get; set; }
 
     /// <summary>
     /// Parent node; null for the document root.
@@ -328,10 +344,10 @@ public class SimisNode(string? value = null)
         public bool IsVerbatim { get; set; }
 
         /// <summary>
-        /// Returns the node value wrapped in quotes when <paramref name="preserveQuotes"/> is true and the value was quoted,
+        /// Returns the node value quoted and escaped when <paramref name="preserveQuotes"/> is true and the value was quoted,
         /// or when the value cannot be written without quotes (see <see cref="RequiresQuotes"/>).
         /// </summary>
-        /// <param name="value">The raw node value.</param>
+        /// <param name="value">The node value.</param>
         /// <param name="preserveQuotes">When true, respect the original quoting state.</param>
         /// <returns>Value wrapped with quotes if necessary, otherwise the original value, or empty string for null.</returns>
         public string GetQuotedValue(string? value, bool preserveQuotes)
@@ -340,14 +356,14 @@ public class SimisNode(string? value = null)
             {
                 return string.Empty;
             }
-            return (preserveQuotes && IsQuoted) || RequiresQuotes(value) ? $"\"{value}\"" : value;
+            return (preserveQuotes && IsQuoted) || RequiresQuotes(value) ? Quote(value) : value;
         }
 
         /// <summary>
-        /// Returns true when <paramref name="value"/> would not be read back as the same single token without quotes:
-        /// it is empty, or it contains whitespace, a parenthesis or a double quote.
+        /// Returns true when <paramref name="value"/> must be quoted to be read back as the same single value by SimisSharp and Open Rails:
+        /// it is empty, or it contains whitespace, a parenthesis, a double quote or a backslash.
         /// </summary>
-        /// <param name="value">The raw node value.</param>
+        /// <param name="value">The node value.</param>
         public static bool RequiresQuotes(string value)
         {
             if (value.Length == 0)
@@ -355,11 +371,19 @@ public class SimisNode(string? value = null)
 
             foreach (char c in value)
             {
-                if (char.IsWhiteSpace(c) || c is '(' or ')' or '"')
+                if (char.IsWhiteSpace(c) || c is '(' or ')' or '"' or '\\')
                     return true;
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Wraps <paramref name="value"/> in quotes, escaping it (see <see cref="SimisValue.Escape"/>).
+        /// </summary>
+        internal static string Quote(string value)
+        {
+            return $"\"{SimisValue.Escape(value)}\"";
         }
     }
 }

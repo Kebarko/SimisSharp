@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using System.Text;
 
 namespace KE.MSTS.SimisSharp;
 
@@ -14,6 +15,80 @@ public static class SimisValue
         | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent | NumberStyles.AllowTrailingWhite;
 
     private const NumberStyles HexStyle = NumberStyles.AllowLeadingWhite | NumberStyles.AllowHexSpecifier | NumberStyles.AllowTrailingWhite;
+
+    /// <summary>
+    /// Decodes the escape sequences of the text between the quotes of a quoted value, as Open Rails does:
+    /// <c>\n</c> is a line feed, <c>\t</c> is a tab, and a backslash before any other character stands for that character,
+    /// so <c>\\</c> is a backslash and <c>\"</c> is a double quote.
+    /// </summary>
+    /// <param name="text">Text between the quotes, as written.</param>
+    /// <returns>The decoded text.</returns>
+    public static string Unescape(ReadOnlySpan<char> text)
+    {
+        int backslash = text.IndexOf('\\');
+        if (backslash < 0)
+            return text.ToString();
+
+        StringBuilder sb = new(text.Length);
+        sb.Append(text[..backslash]);
+
+        for (int i = backslash; i < text.Length; i++)
+        {
+            char c = text[i];
+            if (c != '\\' || i == text.Length - 1)
+            {
+                sb.Append(c);
+                continue;
+            }
+
+            char next = text[++i];
+            sb.Append(next switch
+            {
+                'n' => '\n',
+                't' => '\t',
+                _ => next,
+            });
+        }
+
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// Encodes <paramref name="text"/> for writing between the quotes of a quoted value, so that <see cref="Unescape"/> reads it back unchanged:
+    /// a backslash becomes <c>\\</c>, a double quote <c>\"</c>, a line feed <c>\n</c> and a tab <c>\t</c>.
+    /// </summary>
+    /// <param name="text">Text to encode.</param>
+    /// <returns>The encoded text, without the surrounding quotes.</returns>
+    public static string Escape(string text)
+    {
+        if (text.AsSpan().IndexOfAny("\\\"\n\t") < 0)
+            return text;
+
+        StringBuilder sb = new(text.Length + 8);
+        foreach (char c in text)
+        {
+            switch (c)
+            {
+                case '\\':
+                    sb.Append(@"\\");
+                    break;
+                case '"':
+                    sb.Append("\\\"");
+                    break;
+                case '\n':
+                    sb.Append(@"\n");
+                    break;
+                case '\t':
+                    sb.Append(@"\t");
+                    break;
+                default:
+                    sb.Append(c);
+                    break;
+            }
+        }
+
+        return sb.ToString();
+    }
 
     /// <summary>
     /// Parses a number without a unit, such as <c>1.5</c> or <c>-2e3</c>. A trailing comma is ignored, as Open Rails does.
