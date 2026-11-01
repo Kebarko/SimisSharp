@@ -27,9 +27,13 @@ internal static class SimisTextDecoder
     /// <param name="bytes">Content of the file.</param>
     /// <param name="encoding">Encoding of text that has no byte order mark and is not UTF-16, such as an ANSI file. Defaults to UTF-8.</param>
     /// <returns>The decoded text without the byte order mark.</returns>
+    /// <exception cref="NotSupportedException">When the bytes are a binary or compressed SIMIS file.</exception>
     /// <exception cref="FormatException">When the bytes are not valid text in the detected encoding.</exception>
     public static string Decode(ReadOnlySpan<byte> bytes, Encoding? encoding = null)
     {
+        if (IsBinaryOrCompressed(bytes))
+            throw new NotSupportedException("Binary and compressed SIMIS files are not supported. Only text SIMIS files can be read.");
+
         (Encoding detected, int bomLength) = DetectEncoding(bytes, encoding);
 
         try
@@ -44,6 +48,22 @@ internal static class SimisTextDecoder
 
             throw new FormatException($"The file is not valid {detected.WebName} text.{hint}", ex);
         }
+    }
+
+    /// <summary>
+    /// Returns true when <paramref name="bytes"/> start with the ASCII header of a binary or compressed SIMIS file.
+    /// A compressed file starts with <c>SIMISA@F</c>. An uncompressed file starts with <c>SIMISA@@@@@@@@@@JINX0</c>,
+    /// followed by a two-character file type and <c>b</c> for binary or <c>t</c> for text, as in <c>JINX0s1b</c>.
+    /// </summary>
+    private static bool IsBinaryOrCompressed(ReadOnlySpan<byte> bytes)
+    {
+        if (bytes.StartsWith("SIMISA@F"u8))
+            return true;
+
+        ReadOnlySpan<byte> header = "SIMISA@@@@@@@@@@JINX0"u8;
+        int formatIndex = header.Length + 2;
+
+        return bytes.StartsWith(header) && bytes.Length > formatIndex && bytes[formatIndex] == (byte)'b';
     }
 
     /// <summary>

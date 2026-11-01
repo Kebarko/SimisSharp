@@ -56,6 +56,7 @@ public class SimisProcessor(ILexer? lexer = null, IParser? parser = null, IWrite
     /// </summary>
     /// <param name="filePath">Path to the file to open.</param>
     /// <returns>Parsed document AST.</returns>
+    /// <exception cref="NotSupportedException">When the file is a binary or compressed SIMIS file.</exception>
     /// <exception cref="FormatException">When the file is not valid text in the detected encoding.</exception>
     public SimisDocument Load(string filePath)
     {
@@ -70,6 +71,7 @@ public class SimisProcessor(ILexer? lexer = null, IParser? parser = null, IWrite
     /// <param name="encoding">Encoding of a file without a byte order mark that is not UTF-16, such as an ANSI file. Null means UTF-8.
     /// ANSI code pages such as Windows-1250 require registering <c>System.Text.CodePagesEncodingProvider</c> first.</param>
     /// <returns>Parsed document AST.</returns>
+    /// <exception cref="NotSupportedException">When the file is a binary or compressed SIMIS file.</exception>
     /// <exception cref="FormatException">When the file is not valid text in the detected encoding.</exception>
     public SimisDocument Load(string filePath, Encoding? encoding)
     {

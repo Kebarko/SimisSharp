@@ -123,16 +123,35 @@ public class SimisProcessorTest
         Assert.Throws<FormatException>(() => WithTempFile(content, processor.Load));
     }
 
-    [Theory(Skip = "Known bug: binary and compressed SIMIS files are read as text without an error.")]
+    [Theory]
     [InlineData("SIMISA@@@@@@@@@@JINX0s1b______")]
+    [InlineData("SIMISA@@@@@@@@@@JINX0w2b______")]
     [InlineData("SIMISA@F\u0010\0\0\0@@@@")]
     public void LoadRejectsBinaryAndCompressedFiles(string header)
     {
-        // Arrange
-        byte[] content = [.. Encoding.Latin1.GetBytes(header), 0x78, 0x9C, 0x01, 0x02, 0x03, 0x04];
+        // Arrange: the payload is plain ASCII, so only the header tells the file is not text.
+        byte[] content = [.. Encoding.Latin1.GetBytes(header), .. Encoding.ASCII.GetBytes("\r\nWagon ( Mass ( 10t ) )\r\n")];
 
         // Act & Assert
         Assert.Throws<NotSupportedException>(() => WithTempFile(content, processor.Load));
+    }
+
+    [Theory]
+    [InlineData("SIMISA@@@@@@@@@@JINX0s1t______")]
+    [InlineData("SIMISA@@@@@@@@@@JINX0D0t______")]
+    [InlineData("SIMISA@@@@@@@@@@JINX0b")]
+    [InlineData("SIMISA@@@@@@@@@@")]
+    public void LoadAcceptsTextHeaders(string header)
+    {
+        // Arrange
+        byte[] content = Encoding.ASCII.GetBytes(header + "\r\n\r\nWagon ( Mass ( 10t ) )\r\n");
+
+        // Act
+        SimisDocument document = WithTempFile(content, processor.Load);
+
+        // Assert
+        Assert.Equal(header, document.Root.Nodes[0].Value);
+        Assert.Equal("10t", Assert.Single(SimisPathService.FindNodesByPath(document.Root, "/Wagon/Mass/[1]")).Value);
     }
 
     [Fact]
