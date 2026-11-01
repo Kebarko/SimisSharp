@@ -44,4 +44,21 @@ public class ReadBenchmarks
     {
         return processor.Load(path);
     }
+
+    /// <summary>
+    /// Reads every token with <see cref="SimisReader"/> and parses every number, without building a tree.
+    /// </summary>
+    [Benchmark]
+    public double Read()
+    {
+        double sum = 0;
+        SimisReader reader = new(text);
+        while (reader.Read())
+        {
+            if (reader.TokenType == SimisTokenType.Value && reader.TryGetDouble(out double value))
+                sum += value;
+        }
+
+        return sum;
+    }
 }

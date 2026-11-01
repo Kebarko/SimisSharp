@@ -100,6 +100,15 @@ public static class SimisValue
     }
 
     /// <summary>
+    /// Parses a number without a unit, such as <c>1.5</c> or <c>-2e3</c>. A trailing comma is ignored, as Open Rails does.
+    /// </summary>
+    /// <returns>True when <paramref name="text"/> is a number.</returns>
+    public static bool TryParseDouble(ReadOnlySpan<char> text, out double value)
+    {
+        return double.TryParse(text.TrimEnd(','), NumberStyle, NumberFormatInfo.InvariantInfo, out value);
+    }
+
+    /// <summary>
     /// Parses a number with an optional unit suffix, such as <c>10t</c>, <c>1.2kN</c> or <c>-3.5e2m</c>.
     /// Spaces between the number and the unit are skipped, and a <c>#</c> in the unit starts a comment, so <c>220kN#est</c> has the unit <c>kN</c>.
     /// </summary>
@@ -109,20 +118,34 @@ public static class SimisValue
     /// <returns>True when <paramref name="text"/> starts with a number.</returns>
     public static bool TryParseNumber(string? text, out double value, out string unit)
     {
-        unit = string.Empty;
+        bool parsed = TryParseNumber(text.AsSpan(), out value, out ReadOnlySpan<char> unitSpan);
+        unit = unitSpan.ToString();
+        return parsed;
+    }
 
-        ReadOnlySpan<char> span = text.AsSpan();
-        int numberLength = GetNumberLength(span);
+    /// <summary>
+    /// Parses a number with an optional unit suffix, as <see cref="TryParseNumber(string?, out double, out string)"/> does,
+    /// returning the unit as a part of <paramref name="text"/>.
+    /// </summary>
+    /// <param name="text">Text to parse.</param>
+    /// <param name="value">The number.</param>
+    /// <param name="unit">The unit as written, or an empty span when there is none.</param>
+    /// <returns>True when <paramref name="text"/> starts with a number.</returns>
+    public static bool TryParseNumber(ReadOnlySpan<char> text, out double value, out ReadOnlySpan<char> unit)
+    {
+        unit = [];
 
-        if (!TryParseDouble(span[..numberLength], out value))
+        int numberLength = GetNumberLength(text);
+
+        if (!TryParseDouble(text[..numberLength], out value))
             return false;
 
-        ReadOnlySpan<char> suffix = span[numberLength..].TrimStart(' ');
+        ReadOnlySpan<char> suffix = text[numberLength..].TrimStart(' ');
         int commentStart = suffix.IndexOf('#');
         if (commentStart >= 0)
             suffix = suffix[..commentStart];
 
-        unit = suffix.Trim().ToString();
+        unit = suffix.Trim();
         return true;
     }
 
@@ -132,7 +155,16 @@ public static class SimisValue
     /// <returns>True when <paramref name="text"/> is an integer in range.</returns>
     public static bool TryParseInt32(string? text, out int value)
     {
-        return int.TryParse(text.AsSpan().TrimEnd(','), NumberStyle, NumberFormatInfo.InvariantInfo, out value);
+        return TryParseInt32(text.AsSpan(), out value);
+    }
+
+    /// <summary>
+    /// Parses a signed 32-bit integer, such as <c>-7</c>. A trailing comma is ignored, as Open Rails does.
+    /// </summary>
+    /// <returns>True when <paramref name="text"/> is an integer in range.</returns>
+    public static bool TryParseInt32(ReadOnlySpan<char> text, out int value)
+    {
+        return int.TryParse(text.TrimEnd(','), NumberStyle, NumberFormatInfo.InvariantInfo, out value);
     }
 
     /// <summary>
@@ -141,7 +173,16 @@ public static class SimisValue
     /// <returns>True when <paramref name="text"/> is an unsigned integer in range.</returns>
     public static bool TryParseUInt32(string? text, out uint value)
     {
-        return uint.TryParse(text.AsSpan().TrimEnd(','), NumberStyle, NumberFormatInfo.InvariantInfo, out value);
+        return TryParseUInt32(text.AsSpan(), out value);
+    }
+
+    /// <summary>
+    /// Parses an unsigned 32-bit integer, such as <c>4294967295</c>. A trailing comma is ignored, as Open Rails does.
+    /// </summary>
+    /// <returns>True when <paramref name="text"/> is an unsigned integer in range.</returns>
+    public static bool TryParseUInt32(ReadOnlySpan<char> text, out uint value)
+    {
+        return uint.TryParse(text.TrimEnd(','), NumberStyle, NumberFormatInfo.InvariantInfo, out value);
     }
 
     /// <summary>
@@ -149,6 +190,15 @@ public static class SimisValue
     /// </summary>
     /// <returns>True when <paramref name="text"/> is a hexadecimal number in range.</returns>
     public static bool TryParseHex(string? text, out uint value)
+    {
+        return TryParseHex(text.AsSpan(), out value);
+    }
+
+    /// <summary>
+    /// Parses a hexadecimal number without a prefix, such as <c>ff00ff00</c>.
+    /// </summary>
+    /// <returns>True when <paramref name="text"/> is a hexadecimal number in range.</returns>
+    public static bool TryParseHex(ReadOnlySpan<char> text, out uint value)
     {
         return uint.TryParse(text, HexStyle, NumberFormatInfo.InvariantInfo, out value);
     }
@@ -159,13 +209,22 @@ public static class SimisValue
     /// <returns>True when <paramref name="text"/> is a boolean.</returns>
     public static bool TryParseBoolean(string? text, out bool value)
     {
-        if (string.Equals(text, "true", StringComparison.OrdinalIgnoreCase))
+        return TryParseBoolean(text.AsSpan(), out value);
+    }
+
+    /// <summary>
+    /// Parses a boolean: <c>true</c> or <c>false</c> in any letter case, or an integer where any value other than zero is true.
+    /// </summary>
+    /// <returns>True when <paramref name="text"/> is a boolean.</returns>
+    public static bool TryParseBoolean(ReadOnlySpan<char> text, out bool value)
+    {
+        if (text.Equals("true", StringComparison.OrdinalIgnoreCase))
         {
             value = true;
             return true;
         }
 
-        if (string.Equals(text, "false", StringComparison.OrdinalIgnoreCase))
+        if (text.Equals("false", StringComparison.OrdinalIgnoreCase))
         {
             value = false;
             return true;
@@ -221,14 +280,6 @@ public static class SimisValue
         ArgumentOutOfRangeException.ThrowIfNegative(digits);
 
         return value.ToString("x" + digits.ToString(CultureInfo.InvariantCulture), CultureInfo.InvariantCulture);
-    }
-
-    /// <summary>
-    /// Parses a number without a unit, ignoring a trailing comma.
-    /// </summary>
-    private static bool TryParseDouble(ReadOnlySpan<char> text, out double value)
-    {
-        return double.TryParse(text.TrimEnd(','), NumberStyle, NumberFormatInfo.InvariantInfo, out value);
     }
 
     /// <summary>
