@@ -176,10 +176,91 @@ public class SimisNodeEditingTest
         target.InsertNode(0, b);
 
         // Assert
-        Assert.Empty(source.Nodes);
+        Assert.True(Assert.Single(source.Nodes).IsDummyLeaf);
         Assert.Equal(["B", "X", "A"], Values(target));
         Assert.Same(target, a.Parent);
         Assert.Same(target, b.Parent);
+    }
+
+    [Fact]
+    public void EmptiedBlocksStayBlocks()
+    {
+        // Arrange
+        SimisDocument document = processor.Parse("Wagon ( Lights ( 1 ) Sound ( a b ) Coupling ( Chain ) Brake ( x ) )");
+        SimisNode wagon = document.Root.Nodes[0];
+        SimisNode other = new("Other");
+
+        // Act
+        wagon.GetNode("Lights")!.RemoveAllNodes();
+        wagon.GetNode("Sound")!.RemoveNode("a");
+        wagon.GetNode("Sound")!.RemoveNode("b");
+        SimisNode coupling = wagon.GetNode("Coupling")!;
+        coupling.RemoveNode(coupling.Nodes[0]);
+        other.AddNode(wagon.GetNode("Brake")!.Nodes[0]);
+
+        // Assert
+        Assert.Equal(Lines("Wagon (", "\tLights ( )", "\tSound ( )", "\tCoupling ( )", "\tBrake ( )", ")"), processor.Save(document));
+        Assert.All(wagon.Nodes, n => Assert.True(Assert.Single(n.Nodes).IsDummyLeaf));
+    }
+
+    [Fact]
+    public void AddingToEmptyBlockReplacesPlaceholder()
+    {
+        // Arrange
+        SimisDocument document = processor.Parse("Wagon ( Lights ( 1 ) Empty ( ) )");
+        SimisNode lights = document.Root.Nodes[0].GetNode("Lights")!;
+        SimisNode empty = document.Root.Nodes[0].GetNode("Empty")!;
+        SimisNode placeholder = empty.Nodes[0];
+
+        // Act
+        lights.RemoveAllNodes();
+        lights.AddNode("2");
+        empty.InsertNode(0, "x");
+
+        // Assert
+        Assert.Equal(["2"], Values(lights));
+        Assert.Equal(["x"], Values(empty));
+        Assert.Null(placeholder.Parent);
+        Assert.Equal(Lines("Wagon (", "\tLights ( 2 )", "\tEmpty ( x )", ")"), processor.Save(document));
+    }
+
+    [Fact]
+    public void InsertingIntoEmptyBlockAcceptsOnlyFirstIndex()
+    {
+        // Arrange
+        SimisNode block = processor.Parse("Empty ( )").Root.Nodes[0];
+
+        // Act & Assert
+        Assert.Throws<ArgumentOutOfRangeException>(() => block.InsertNode(1, "x"));
+        Assert.True(Assert.Single(block.Nodes).IsDummyLeaf);
+    }
+
+    [Fact]
+    public void RemovingAllNodesOfLeafKeepsLeaf()
+    {
+        // Arrange
+        SimisNode leaf = new("Lights");
+
+        // Act
+        leaf.RemoveAllNodes();
+
+        // Assert
+        Assert.True(leaf.IsLeaf);
+    }
+
+    [Fact]
+    public void MovingOnlyChildWithinBlockKeepsIt()
+    {
+        // Arrange
+        SimisNode block = Parent("A");
+        SimisNode a = block.Nodes[0];
+
+        // Act
+        block.AddNode(a);
+        block.InsertNode(0, a);
+
+        // Assert
+        Assert.Same(a, Assert.Single(block.Nodes));
     }
 
     [Fact]

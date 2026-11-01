@@ -60,9 +60,15 @@ public class SimisNode(string? value = null)
     public bool IsLeaf => subnodes.Count == 0;
 
     /// <summary>
-    /// True when node is a leaf and has no value (used to represent an empty element).
+    /// True when node is a leaf and has no value. It is the placeholder child of an empty block, such as <c>Lights ( )</c>,
+    /// which keeps the block written with its parentheses. Adding a child to an empty block replaces the placeholder.
     /// </summary>
     public bool IsDummyLeaf => IsLeaf && Value == null;
+
+    /// <summary>
+    /// True when the only child is the placeholder of an empty block.
+    /// </summary>
+    private bool HasOnlyPlaceholder => subnodes.Count == 1 && subnodes[0].IsDummyLeaf;
 
     /// <summary>
     /// True when node is the dummy root (no parent and no value).
@@ -186,6 +192,7 @@ public class SimisNode(string? value = null)
     /// <summary>
     /// Adds the given <paramref name="subnode"/> after the existing child nodes and sets its parent reference.
     /// A node that already has a parent is moved: it is removed from its current parent first.
+    /// Adding a child to an empty block replaces its placeholder (see <see cref="IsDummyLeaf"/>).
     /// </summary>
     /// <returns>The added node.</returns>
     /// <exception cref="ArgumentNullException">When <paramref name="subnode"/> is null.</exception>
@@ -193,6 +200,7 @@ public class SimisNode(string? value = null)
     public SimisNode AddNode(SimisNode subnode)
     {
         Attach(subnode);
+        RemovePlaceholder(subnode);
         subnodes.Add(subnode);
         return subnode;
     }
@@ -211,6 +219,7 @@ public class SimisNode(string? value = null)
     /// Inserts the given <paramref name="subnode"/> at <paramref name="index"/> and sets its parent reference.
     /// A node that already has a parent is moved: it is removed from its current parent first.
     /// When it is already a child of this node, <paramref name="index"/> refers to the child nodes without it.
+    /// Inserting into an empty block replaces its placeholder (see <see cref="IsDummyLeaf"/>), so the only valid index is 0.
     /// </summary>
     /// <returns>The inserted node.</returns>
     /// <exception cref="ArgumentNullException">When <paramref name="subnode"/> is null.</exception>
@@ -220,9 +229,12 @@ public class SimisNode(string? value = null)
     {
         ArgumentNullException.ThrowIfNull(subnode);
         ArgumentOutOfRangeException.ThrowIfNegative(index);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(index, ReferenceEquals(subnode.Parent, this) ? subnodes.Count - 1 : subnodes.Count);
+
+        int count = HasOnlyPlaceholder ? 0 : subnodes.Count - (ReferenceEquals(subnode.Parent, this) ? 1 : 0);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(index, count);
 
         Attach(subnode);
+        RemovePlaceholder(subnode);
         subnodes.Insert(index, subnode);
         return subnode;
     }
@@ -254,9 +266,11 @@ public class SimisNode(string? value = null)
 
     /// <summary>
     /// Removes all child nodes that have the specified value using the given string comparison.
+    /// A block that loses its last child stays an empty block (see <see cref="IsDummyLeaf"/>).
     /// </summary>
     public void RemoveNode(string value, StringComparison comparisonType = StringComparison.Ordinal)
     {
+        bool removed = false;
         for (int i = subnodes.Count - 1; i >= 0; i--)
         {
             SimisNode subnode = subnodes[i];
@@ -264,31 +278,66 @@ public class SimisNode(string? value = null)
             {
                 subnodes.RemoveAt(i);
                 subnode.Parent = null;
+                removed = true;
             }
         }
+
+        if (removed)
+            AddPlaceholderIfEmpty();
     }
 
     /// <summary>
     /// Removes a specific child node and clears its parent reference.
+    /// A block that loses its last child stays an empty block (see <see cref="IsDummyLeaf"/>).
     /// </summary>
     public void RemoveNode(SimisNode subnode)
     {
         if (subnodes.Remove(subnode))
         {
             subnode.Parent = null;
+            AddPlaceholderIfEmpty();
         }
     }
 
     /// <summary>
     /// Remove all child nodes and clear each child's parent reference.
+    /// A block stays an empty block (see <see cref="IsDummyLeaf"/>), so <c>Lights ( 1 )</c> becomes <c>Lights ( )</c>, not <c>Lights</c>.
     /// </summary>
     public void RemoveAllNodes()
     {
+        if (subnodes.Count == 0)
+            return;
+
         foreach (SimisNode subnode in subnodes)
         {
             subnode.Parent = null;
         }
         subnodes.Clear();
+        AddPlaceholderIfEmpty();
+    }
+
+    /// <summary>
+    /// Adds the placeholder of an empty block when the last child has been removed, so the node stays a block.
+    /// </summary>
+    private void AddPlaceholderIfEmpty()
+    {
+        if (subnodes.Count > 0)
+            return;
+
+        SimisNode placeholder = new() { Parent = this };
+        subnodes.Add(placeholder);
+    }
+
+    /// <summary>
+    /// Removes the placeholder of an empty block before <paramref name="subnode"/> is added to it.
+    /// </summary>
+    private void RemovePlaceholder(SimisNode subnode)
+    {
+        if (HasOnlyPlaceholder && !ReferenceEquals(subnodes[0], subnode))
+        {
+            subnodes[0].Parent = null;
+            subnodes.Clear();
+        }
     }
 
     /// <summary>
