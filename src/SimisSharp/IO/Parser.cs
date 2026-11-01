@@ -1,109 +1,88 @@
 ﻿namespace KE.MSTS.SimisSharp.IO;
 
 /// <summary>
-/// Parser that builds a <see cref="SimisDocument"/> from a token stream.
+/// Parser that builds a <see cref="SimisDocument"/> from Simis text in one pass, reading it with a <see cref="SimisReader"/>.
 /// </summary>
 internal static class Parser
 {
     /// <summary>
-    /// Parse the provided tokens into a document tree. Handles node quoting and leading/trailing empty line counts.
+    /// Parse <paramref name="text"/> into a document tree. Keeps node quoting and leading/trailing empty line counts.
     /// The content of a comment block is kept verbatim as a single child node.
     /// </summary>
-    /// <exception cref="SimisParseException">When the parentheses are unbalanced, or a block has no name.</exception>
-    public static SimisDocument Parse(IEnumerable<string> tokens)
+    /// <exception cref="ArgumentNullException">When <paramref name="text"/> is null.</exception>
+    /// <exception cref="SimisParseException">When the text is not well-formed (see <see cref="SimisReader.Read"/>).</exception>
+    public static SimisDocument Parse(string text)
     {
+        ArgumentNullException.ThrowIfNull(text);
+
         SimisDocument document = new();
         SimisNode parent = document.Root;
+        // The node read last. Blank lines before a closing parenthesis are kept as trailing empty lines of its parent.
         SimisNode node = document.Root;
-        // Line breaks since the previous token. Two line breaks in a row make one blank line.
-        byte newLines = 0;
-        bool isCommentHead = false;
-        bool isCommentBody = false;
-        // True when the previous token, ignoring line breaks, is a value that can name a block.
-        bool isAfterValue = false;
-        // The 1-based line of the current token, and the lines where the open blocks start.
-        int line = 1;
-        Stack<int> openLines = new();
+        SimisReader reader = new(text, readComments: true);
 
-        foreach (string token in tokens)
+        while (reader.Read())
         {
-            int tokenLine = line;
-            line += token.AsSpan().Count('\n');
+            int lineBreaks = reader.LineBreaksBefore;
 
-            if (isCommentBody && token is not ")")
+            switch (reader.TokenType)
             {
-                // The comment content stays verbatim, even when it looks like a quoted string or a newline token.
-                node = new(token);
-                node.Formatting.IsVerbatim = true;
-                parent.AddNode(node);
-                isCommentBody = false;
-                continue;
-            }
+                case SimisTokenType.Value:
+                    node = AddValue(parent, reader, lineBreaks);
+                    break;
 
-            isCommentBody = false;
+                case SimisTokenType.StartBlock:
+                    node = AddValue(parent, reader, lineBreaks);
+                    parent = node;
+                    break;
 
-            if (token is "(")
-            {
-                if (!isAfterValue)
-                    throw new SimisParseException("Expected a block name before '('.", tokenLine);
+                case SimisTokenType.Comment:
+                    node = AddValue(parent, reader, lineBreaks);
+                    if (reader.CommentText.IsEmpty)
+                    {
+                        node.AddNode(new SimisNode());
+                    }
+                    else
+                    {
+                        // The comment content stays verbatim, even when it looks like quoted strings or blocks.
+                        SimisNode content = new(reader.CommentText.ToString());
+                        content.Formatting.IsVerbatim = true;
+                        node = node.AddNode(content);
+                    }
+                    break;
 
-                parent = node;
-                openLines.Push(tokenLine);
-                newLines = 0;
-                isCommentBody = isCommentHead;
-                isCommentHead = false;
-                isAfterValue = false;
-            }
-            else if (token is ")")
-            {
-                if (openLines.Count == 0)
-                    throw new SimisParseException("Unexpected ')' without an open block.", tokenLine);
+                case SimisTokenType.EndBlock:
+                    if (ReferenceEquals(parent, node))
+                        node.AddNode(new SimisNode());
 
-                if (ReferenceEquals(parent, node))
-                    node.AddNode(new SimisNode());
+                    if (lineBreaks > 1)
+                        node.Parent?.Formatting.TrailingEmptyLines = (byte)(lineBreaks - 1);
 
-                if (newLines > 1)
-                    node.Parent?.Formatting.TrailingEmptyLines = (byte)(newLines - 1);
-
-                parent = parent.Parent ?? document.Root;
-                openLines.Pop();
-                newLines = 0;
-                isCommentHead = false;
-                isAfterValue = false;
-            }
-            else if (token == Environment.NewLine)
-            {
-                newLines++;
-            }
-            else
-            {
-                if (token.Length > 1 && token[0] == '"' && token[^1] == '"')
-                {
-                    node = new(SimisValue.Unescape(token.AsSpan(1, token.Length - 2)));
-                    node.Formatting.IsQuoted = true;
-                }
-                else
-                {
-                    node = new(token);
-                }
-
-                node.OriginalText = token;
-
-                isCommentHead = TokenConfiguration.IsCommentToken(token);
-                node.Formatting.IsOnSameLineAsPrevious = !parent.IsLeaf && newLines == 0;
-
-                if (newLines > 1)
-                    node.Formatting.LeadingEmptyLines = (byte)(newLines - 1);
-
-                parent.AddNode(node);
-                newLines = 0;
-                isAfterValue = true;
+                    parent = parent.Parent ?? document.Root;
+                    break;
             }
         }
 
-        if (openLines.Count > 0)
-            throw new SimisParseException($"The block '{parent.Value}' is not closed.", openLines.Peek());
-
         return document;
+    }
+
+    /// <summary>
+    /// Adds a node for the current value, block name or comment block name of <paramref name="reader"/> to <paramref name="parent"/>.
+    /// </summary>
+    /// <param name="parent">The node to add to.</param>
+    /// <param name="reader">The reader positioned on the value.</param>
+    /// <param name="lineBreaks">The number of line breaks before the value.</param>
+    /// <returns>The new node.</returns>
+    private static SimisNode AddValue(SimisNode parent, in SimisReader reader, int lineBreaks)
+    {
+        SimisNode node = new(reader.GetString());
+        node.OriginalText = reader.IsQuoted ? string.Concat("\"", reader.ValueSpan, "\"") : node.Value;
+        node.Formatting.IsQuoted = reader.IsQuoted;
+        node.Formatting.IsOnSameLineAsPrevious = !parent.IsLeaf && lineBreaks == 0;
+
+        if (lineBreaks > 1)
+            node.Formatting.LeadingEmptyLines = (byte)(lineBreaks - 1);
+
+        return parent.AddNode(node);
     }
 }

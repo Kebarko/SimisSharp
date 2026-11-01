@@ -82,8 +82,7 @@ public class SimisProcessor
     /// unbalanced parentheses, or a block without a name. <see cref="SimisParseException.Line"/> tells where.</exception>
     public SimisDocument Parse(string content)
     {
-        IList<string> tokens = Lexer.Lex(content);
-        return Parser.Parse(tokens);
+        return Parser.Parse(content);
     }
 
     /// <summary>

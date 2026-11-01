@@ -1,7 +1,7 @@
 ﻿namespace KE.MSTS.SimisSharp.IO;
 
 /// <summary>
-/// Holds token configuration used by the IO components (lexer/parser/writer).
+/// Holds token configuration used by the reader, parser and writer.
 /// </summary>
 internal static class TokenConfiguration
 {

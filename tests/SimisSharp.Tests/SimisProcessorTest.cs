@@ -351,6 +351,8 @@ public class SimisProcessorTest
     [InlineData("A ( 1 ) ( 2 )", 1, "block name before '('")]
     [InlineData("A ( ( 1 ) )", 1, "block name before '('")]
     [InlineData("A (\n\tB ( 1 )\n\t( 2 )\n)", 3, "block name before '('")]
+    [InlineData("A ( 1 ) )\nB ( \"abc )", 1, "Unexpected ')'")]
+    [InlineData("A ( \"abc )\n)", 1, "Unterminated quoted string")]
     public void MalformedBlocksThrowWithLine(string input, int line, string message)
     {
         // Act
