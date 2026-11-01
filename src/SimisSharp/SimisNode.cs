@@ -100,32 +100,32 @@ public class SimisNode(string? value = null)
     public bool IsComment => !IsLeaf && Value != null && !IsQuoted && TokenConfiguration.IsCommentToken(Value);
 
     /// <summary>
-    /// Reads the value as a number without a unit (see <see cref="SimisValue.TryParseDouble"/>).
+    /// Reads the value as a number without a unit (see <see cref="SimisValue.TryParseDouble(string?, out double)"/>).
     /// </summary>
     public bool TryGetDouble(out double value) => SimisValue.TryParseDouble(Value, out value);
 
     /// <summary>
-    /// Reads the value as a number with an optional unit, such as <c>10t</c> (see <see cref="SimisValue.TryParseNumber"/>).
+    /// Reads the value as a number with an optional unit, such as <c>10t</c> (see <see cref="SimisValue.TryParseNumber(string?, out double, out string)"/>).
     /// </summary>
     public bool TryGetNumber(out double value, out string unit) => SimisValue.TryParseNumber(Value, out value, out unit);
 
     /// <summary>
-    /// Reads the value as a signed 32-bit integer (see <see cref="SimisValue.TryParseInt32"/>).
+    /// Reads the value as a signed 32-bit integer (see <see cref="SimisValue.TryParseInt32(string?, out int)"/>).
     /// </summary>
     public bool TryGetInt32(out int value) => SimisValue.TryParseInt32(Value, out value);
 
     /// <summary>
-    /// Reads the value as an unsigned 32-bit integer (see <see cref="SimisValue.TryParseUInt32"/>).
+    /// Reads the value as an unsigned 32-bit integer (see <see cref="SimisValue.TryParseUInt32(string?, out uint)"/>).
     /// </summary>
     public bool TryGetUInt32(out uint value) => SimisValue.TryParseUInt32(Value, out value);
 
     /// <summary>
-    /// Reads the value as a hexadecimal number without a prefix (see <see cref="SimisValue.TryParseHex"/>).
+    /// Reads the value as a hexadecimal number without a prefix (see <see cref="SimisValue.TryParseHex(string?, out uint)"/>).
     /// </summary>
     public bool TryGetHex(out uint value) => SimisValue.TryParseHex(Value, out value);
 
     /// <summary>
-    /// Reads the value as a boolean (see <see cref="SimisValue.TryParseBoolean"/>).
+    /// Reads the value as a boolean (see <see cref="SimisValue.TryParseBoolean(string?, out bool)"/>).
     /// </summary>
     public bool TryGetBoolean(out bool value) => SimisValue.TryParseBoolean(Value, out value);
 
