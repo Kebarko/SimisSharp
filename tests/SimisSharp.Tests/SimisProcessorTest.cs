@@ -177,6 +177,83 @@ public class SimisProcessorTest
         }
     }
 
+    [Fact]
+    public void SaveCreatesAndReplacesFilesWithoutLeftovers()
+    {
+        WithTempDirectory(directory =>
+        {
+            // Arrange
+            string path = Path.Combine(directory, "wagon.wag");
+            SimisDocument first = processor.Parse(Text);
+            SimisDocument second = processor.Parse("Wagon ( Mass ( 20t ) )");
+
+            // Act
+            processor.Save(first, path);
+            string created = File.ReadAllText(path, Encoding.Unicode);
+            processor.Save(second, path);
+            string replaced = File.ReadAllText(path, Encoding.Unicode);
+
+            // Assert
+            Assert.Equal(processor.Save(first), created);
+            Assert.Equal(processor.Save(second), replaced);
+            Assert.Equal([path], Directory.GetFiles(directory));
+        });
+    }
+
+    [Fact]
+    public void SaveKeepsAttributesOfReplacedFile()
+    {
+        WithTempDirectory(directory =>
+        {
+            // Arrange
+            string path = Path.Combine(directory, "wagon.wag");
+            File.WriteAllText(path, "old", Encoding.Unicode);
+            File.SetAttributes(path, FileAttributes.Archive | FileAttributes.Hidden);
+
+            // Act
+            processor.Save(processor.Parse(Text), path);
+
+            // Assert
+            Assert.True(File.GetAttributes(path).HasFlag(FileAttributes.Hidden));
+            Assert.Equal(processor.Save(processor.Parse(Text)), File.ReadAllText(path, Encoding.Unicode));
+        });
+    }
+
+    [Fact]
+    public void FailedSaveKeepsOriginalFileAndRemovesTemporaryFile()
+    {
+        WithTempDirectory(directory =>
+        {
+            // Arrange
+            string path = Path.Combine(directory, "wagon.wag");
+            File.WriteAllText(path, "original", Encoding.Unicode);
+
+            // Act: another program keeps the file open, so it cannot be replaced.
+            using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+            {
+                Assert.ThrowsAny<IOException>(() => processor.Save(processor.Parse(Text), path));
+            }
+
+            // Assert
+            Assert.Equal("original", File.ReadAllText(path, Encoding.Unicode));
+            Assert.Equal([path], Directory.GetFiles(directory));
+        });
+    }
+
+    [Fact]
+    public void SaveToMissingFolderThrowsWithoutLeftovers()
+    {
+        WithTempDirectory(directory =>
+        {
+            // Arrange
+            string path = Path.Combine(directory, "missing", "wagon.wag");
+
+            // Act & Assert
+            Assert.Throws<DirectoryNotFoundException>(() => processor.Save(processor.Parse(Text), path));
+            Assert.Empty(Directory.GetFileSystemEntries(directory));
+        });
+    }
+
     [Theory]
     [InlineData(1)]
     [InlineData(2)]
@@ -341,6 +418,24 @@ public class SimisProcessorTest
     private static void AssertNonAsciiDocument(SimisDocument document)
     {
         Assert.Equal("Lokomotíva Škoda", Assert.Single(SimisPathService.FindNodesByPath(document.Root, "/Wagon/Name/[1]")).Value);
+    }
+
+    private static void WithTempDirectory(Action<string> action)
+    {
+        string directory = Path.Combine(Path.GetTempPath(), $"SimisSharp-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(directory);
+
+        try
+        {
+            action(directory);
+        }
+        finally
+        {
+            foreach (string file in Directory.GetFiles(directory, "*", SearchOption.AllDirectories))
+                File.SetAttributes(file, FileAttributes.Normal);
+
+            Directory.Delete(directory, recursive: true);
+        }
     }
 
     private static T WithTempFile<T>(byte[] content, Func<string, T> action)

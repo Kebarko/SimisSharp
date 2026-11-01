@@ -25,6 +25,8 @@ public class SimisProcessor(ILexer? lexer = null, IParser? parser = null, IWrite
 
     /// <summary>
     /// Serialize the document and write it to <paramref name="filePath"/> as UTF-16LE with a byte order mark, the encoding MSTS reads.
+    /// The text is written to a temporary file in the same folder first, which then replaces the target in one step,
+    /// so a failure while writing leaves an existing file unchanged. Replacing an existing file keeps its attributes.
     /// </summary>
     /// <param name="document">Document to save.</param>
     /// <param name="filePath">Target file path to create/overwrite.</param>
@@ -33,9 +35,45 @@ public class SimisProcessor(ILexer? lexer = null, IParser? parser = null, IWrite
     {
         string content = Save(document, options);
 
-        using FileStream stream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None);
-        using StreamWriter streamWriter = new StreamWriter(stream, Encoding.Unicode, leaveOpen: false);
-        streamWriter.Write(content);
+        string fullPath = Path.GetFullPath(filePath);
+        string tempPath = Path.Combine(Path.GetDirectoryName(fullPath) ?? string.Empty, $"{Path.GetFileName(fullPath)}.{Guid.NewGuid():N}.tmp");
+
+        try
+        {
+            using (FileStream stream = new(tempPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+            using (StreamWriter streamWriter = new(stream, Encoding.Unicode))
+            {
+                streamWriter.Write(content);
+                streamWriter.Flush();
+                stream.Flush(flushToDisk: true);
+            }
+
+            if (File.Exists(fullPath))
+                File.Replace(tempPath, fullPath, destinationBackupFileName: null);
+            else
+                File.Move(tempPath, fullPath);
+        }
+        finally
+        {
+            DeleteQuietly(tempPath);
+        }
+    }
+
+    /// <summary>
+    /// Deletes a leftover temporary file, ignoring errors so that the original exception is not hidden.
+    /// </summary>
+    private static void DeleteQuietly(string path)
+    {
+        try
+        {
+            File.Delete(path);
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
     }
 
     /// <summary>
