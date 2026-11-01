@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Globalization;
+using System.Text;
 using static KE.MSTS.SimisSharp.IO.WriterOptions;
 
 namespace KE.MSTS.SimisSharp.IO;
@@ -79,7 +80,7 @@ internal class Writer : IWriter
             int[] columnWidths = [];
             if (tableConfig != null)
             {
-                totalColumns = GetColumns(tableConfig, node, options.IgnoreCase);
+                totalColumns = Math.Clamp(GetColumns(tableConfig, node, options.IgnoreCase), 0, subnodes.Count);
                 if (tableConfig.FixedWidth)
                 {
                     columnWidths = GetColumnWidths(subnodes, totalColumns, tableConfig.Offset, options.PreserveQuotes);
@@ -166,20 +167,18 @@ internal class Writer : IWriter
 
     /// <summary>
     /// Resolve the configured column count. If <see cref="TableConfig.Columns"/> contains a number that is parsed, that value is returned; otherwise the value is looked up by path on the node.
+    /// The count may come from the file, so the caller limits it to the number of values.
     /// </summary>
     private static int GetColumns(TableConfig tableConfig, SimisNode node, bool ignoreCase)
     {
-        int columns = 0;
-        if (!int.TryParse(tableConfig.Columns, out columns))
-        {
-            IList<SimisNode> sourceNodes = SimisPathService.FindNodesByPath(node, tableConfig.Columns, ignoreCase);
-            if (sourceNodes.Count > 0)
-            {
-                _ = int.TryParse(sourceNodes[0].Value, out columns);
-            }
-        }
+        if (int.TryParse(tableConfig.Columns, NumberStyles.Integer, CultureInfo.InvariantCulture, out int columns))
+            return columns;
 
-        return columns;
+        IList<SimisNode> sourceNodes = SimisPathService.FindNodesByPath(node, tableConfig.Columns, ignoreCase);
+        if (sourceNodes.Count > 0 && int.TryParse(sourceNodes[0].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out columns))
+            return columns;
+
+        return 0;
     }
 
     /// <summary>
