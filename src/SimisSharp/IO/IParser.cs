@@ -10,5 +10,6 @@ public interface IParser
     /// </summary>
     /// <param name="tokens">Token stream (as produced by <see cref="ILexer"/>).</param>
     /// <returns>Parsed <see cref="SimisDocument"/> instance.</returns>
+    /// <exception cref="SimisParseException">When the tokens are not well-formed, such as unbalanced parentheses.</exception>
     SimisDocument Parse(IEnumerable<string> tokens);
 }

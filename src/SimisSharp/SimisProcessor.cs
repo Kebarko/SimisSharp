@@ -43,6 +43,8 @@ public class SimisProcessor(ILexer? lexer = null, IParser? parser = null, IWrite
     /// </summary>
     /// <param name="content">Text content to parse.</param>
     /// <returns>Parsed document AST.</returns>
+    /// <exception cref="SimisParseException">When the text is not well-formed: an unterminated quoted string or comment block,
+    /// unbalanced parentheses, or a block without a name. <see cref="SimisParseException.Line"/> tells where.</exception>
     public SimisDocument Parse(string content)
     {
         IList<string> tokens = lexer.Lex(content);
@@ -58,6 +60,7 @@ public class SimisProcessor(ILexer? lexer = null, IParser? parser = null, IWrite
     /// <returns>Parsed document AST.</returns>
     /// <exception cref="NotSupportedException">When the file is a binary or compressed SIMIS file.</exception>
     /// <exception cref="FormatException">When the file is not valid text in the detected encoding.</exception>
+    /// <exception cref="SimisParseException">When the text is not well-formed (see <see cref="Parse(string)"/>).</exception>
     public SimisDocument Load(string filePath)
     {
         return Load(filePath, null);
@@ -73,6 +76,7 @@ public class SimisProcessor(ILexer? lexer = null, IParser? parser = null, IWrite
     /// <returns>Parsed document AST.</returns>
     /// <exception cref="NotSupportedException">When the file is a binary or compressed SIMIS file.</exception>
     /// <exception cref="FormatException">When the file is not valid text in the detected encoding.</exception>
+    /// <exception cref="SimisParseException">When the text is not well-formed (see <see cref="Parse(string)"/>).</exception>
     public SimisDocument Load(string filePath, Encoding? encoding)
     {
         byte[] bytes = File.ReadAllBytes(filePath);

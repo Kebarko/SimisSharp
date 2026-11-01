@@ -11,7 +11,7 @@ internal class Lexer : ILexer
     /// Tokenize the provided <paramref name="text"/>. Throws for unterminated quoted strings and comment blocks.
     /// </summary>
     /// <exception cref="ArgumentNullException">When <paramref name="text"/> is null.</exception>
-    /// <exception cref="FormatException">When a quoted string or a comment block is not terminated.</exception>
+    /// <exception cref="SimisParseException">When a quoted string or a comment block is not terminated.</exception>
     public IList<string> Lex(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
@@ -81,7 +81,7 @@ internal class Lexer : ILexer
         }
 
         if (quoted)
-            throw new FormatException("Unterminated quoted string.");
+            throw new SimisParseException("Unterminated quoted string.", GetLine(span, tokenStart));
 
         Emit(span, tokens, ref tokenStart, span.Length - 1, ref commentPending);
 
@@ -105,6 +105,14 @@ internal class Lexer : ILexer
     }
 
     /// <summary>
+    /// Returns the 1-based line of the character at <paramref name="index"/>.
+    /// </summary>
+    private static int GetLine(ReadOnlySpan<char> span, int index)
+    {
+        return span[..index].Count('\n') + 1;
+    }
+
+    /// <summary>
     /// Returns true when the first character at or after <paramref name="index"/> that is not whitespace opens a block.
     /// </summary>
     private static bool IsFollowedByBlock(ReadOnlySpan<char> span, int index)
@@ -121,7 +129,7 @@ internal class Lexer : ILexer
     /// including strings joined with <c>+</c>, and characters escaped with a backslash do not open or close a block.
     /// </summary>
     /// <returns>Index of the closing parenthesis.</returns>
-    /// <exception cref="FormatException">When the block or a quoted string inside it is not terminated.</exception>
+    /// <exception cref="SimisParseException">When the block or a quoted string inside it is not terminated.</exception>
     private static int FindCommentBlockEnd(ReadOnlySpan<char> span, int start)
     {
         int depth = 1;
@@ -131,7 +139,7 @@ internal class Lexer : ILexer
         {
             i = SkipStfWhiteSpace(span, i);
             if (i >= span.Length)
-                throw new FormatException("Unterminated comment block.");
+                throw new SimisParseException("Unterminated comment block.", GetLine(span, start - 1));
 
             char c = span[i++];
             switch (c)
@@ -157,13 +165,15 @@ internal class Lexer : ILexer
     /// Skips the rest of a quoted item whose opening quote precedes <paramref name="index"/>, including any strings appended with <c>+</c>.
     /// </summary>
     /// <returns>Index of the first character after the item.</returns>
-    /// <exception cref="FormatException">When the quoted string is not terminated.</exception>
+    /// <exception cref="SimisParseException">When the quoted string is not terminated.</exception>
     private static int SkipQuotedItem(ReadOnlySpan<char> span, int index)
     {
+        int quoteStart = index - 1;
+
         while (true)
         {
             if (index >= span.Length)
-                throw new FormatException("Unterminated quoted string in comment block.");
+                throw new SimisParseException("Unterminated quoted string in comment block.", GetLine(span, quoteStart));
 
             char c = span[index++];
             if (c == '\\')
@@ -180,6 +190,7 @@ internal class Lexer : ILexer
                 if (next >= span.Length || span[next] != '"')
                     return next;
 
+                quoteStart = next;
                 index = next + 1;
             }
         }

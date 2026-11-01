@@ -88,12 +88,16 @@ public class CommentTest
     }
 
     [Theory]
-    [InlineData("comment ( note")]
-    [InlineData("comment ( \"a ) b )")]
-    [InlineData("_ORTSFoo ( ( 1 )")]
-    public void UnterminatedCommentBlockThrows(string input)
+    [InlineData("comment ( note", 1)]
+    [InlineData("comment ( \"a ) b )", 1)]
+    [InlineData("_ORTSFoo ( ( 1 )", 1)]
+    [InlineData("A ( 1 )\r\n\r\ncomment (\r\n  note", 3)]
+    [InlineData("comment (\r\n  x\r\n  \"a ) b )", 3)]
+    [InlineData("comment ( \"a\" +\r\n  \"b ) c )", 2)]
+    public void UnterminatedCommentBlockThrows(string input, int line)
     {
-        Assert.Throws<FormatException>(() => processor.Parse(input));
+        SimisParseException exception = Assert.Throws<SimisParseException>(() => processor.Parse(input));
+        Assert.Equal(line, exception.Line);
     }
 
     [Fact]

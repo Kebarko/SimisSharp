@@ -259,14 +259,62 @@ public class SimisProcessorTest
         Assert.Equal(Lines("SIMISA@@@@@@@@@@JINX0D0t______", "Wagon (", "\tMass ( 10t )", "\tSize ( 1 2 3 )", ")", "Engine ( 1 )"), removed);
     }
 
-    [Theory(Skip = "Known bug: unbalanced parentheses are accepted silently.")]
-    [InlineData("A ( B ( 1 )")]
-    [InlineData("A ( 1 ) ) B ( 2 )")]
-    [InlineData(")")]
-    [InlineData("(")]
-    public void UnbalancedParenthesesThrow(string input)
+    [Theory]
+    [InlineData("A ( B ( 1 )", 1, "'A' is not closed")]
+    [InlineData("A ( 1 )\nB (\n\tC ( 2\n)\n", 2, "'B' is not closed")]
+    [InlineData("Wagon (\n\tMass (\n\t\t10t\n", 2, "'Mass' is not closed")]
+    [InlineData("\"My Wagon\" (\n", 1, "'My Wagon' is not closed")]
+    [InlineData("A ( 1 ) ) B ( 2 )", 1, "Unexpected ')'")]
+    [InlineData("A ( 1 )\n)\n", 2, "Unexpected ')'")]
+    [InlineData(")", 1, "Unexpected ')'")]
+    [InlineData("A ( \"multi\nline\" )\n)", 3, "Unexpected ')'")]
+    [InlineData("comment ( a\nb )\n)", 3, "Unexpected ')'")]
+    [InlineData("(", 1, "block name before '('")]
+    [InlineData("\n\n( 1 )", 3, "block name before '('")]
+    [InlineData("A ( 1 ) ( 2 )", 1, "block name before '('")]
+    [InlineData("A ( ( 1 ) )", 1, "block name before '('")]
+    [InlineData("A (\n\tB ( 1 )\n\t( 2 )\n)", 3, "block name before '('")]
+    public void MalformedBlocksThrowWithLine(string input, int line, string message)
     {
-        Assert.Throws<FormatException>(() => processor.Parse(input));
+        // Act
+        SimisParseException exception = Assert.Throws<SimisParseException>(() => processor.Parse(input));
+
+        // Assert
+        Assert.Equal(line, exception.Line);
+        Assert.StartsWith($"Line {line}: ", exception.Message);
+        Assert.Contains(message, exception.Message);
+    }
+
+    [Theory]
+    [InlineData("A ( \"abc )", 1)]
+    [InlineData("A ( 1 )\nB ( \"abc )\n", 2)]
+    [InlineData("A ( \"ok\nstill ok\" )\nB ( \"abc )", 3)]
+    public void UnterminatedQuotedStringThrowsWithLine(string input, int line)
+    {
+        SimisParseException exception = Assert.Throws<SimisParseException>(() => processor.Parse(input));
+        Assert.Equal(line, exception.Line);
+    }
+
+    [Fact]
+    public void LoadReportsLineOfMalformedFile()
+    {
+        // Arrange
+        byte[] content = [.. Encoding.Unicode.GetPreamble(), .. Encoding.Unicode.GetBytes(Lines("SIMISA@@@@@@@@@@JINX0D0t______", "", "Wagon (", "\tMass ( 10t )"))];
+
+        // Act & Assert
+        SimisParseException exception = Assert.Throws<SimisParseException>(() => WithTempFile(content, processor.Load));
+        Assert.Equal(3, exception.Line);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("A")]
+    [InlineData("A ( )")]
+    [InlineData("\"A\" ( 1 )")]
+    [InlineData("A ( B ( C ( 1 ) ) D ( ) )\nE ( 2 )")]
+    public void WellFormedBlocksParse(string input)
+    {
+        _ = processor.Parse(input);
     }
 
     /// <summary>

@@ -10,5 +10,6 @@ public interface ILexer
     /// </summary>
     /// <param name="text">Input text to tokenize (must not be null).</param>
     /// <returns>List of tokens in the order they appear in the input.</returns>
+    /// <exception cref="SimisParseException">When the text is not well-formed, such as an unterminated quoted string.</exception>
     IList<string> Lex(string text);
 }
