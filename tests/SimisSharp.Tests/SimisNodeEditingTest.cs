@@ -326,6 +326,47 @@ public class SimisNodeEditingTest
     }
 
     [Fact]
+    public void BlockWithoutValueCannotBeBuilt()
+    {
+        // Arrange
+        SimisDocument document = processor.Parse("Wagon ( Lights ( ) )");
+        SimisNode wagon = document.Root.Nodes[0];
+        SimisNode placeholder = wagon.GetNode("Lights")!.Nodes[0];
+        SimisNode nameless = document.Root.AddNode(new SimisNode());
+        SimisNode container = new();
+        container.AddNode("1");
+
+        // Act & Assert
+        Assert.Throws<InvalidOperationException>(() => nameless.AddNode("1"));
+        Assert.Throws<InvalidOperationException>(() => nameless.InsertNode(0, "1"));
+        Assert.Throws<InvalidOperationException>(() => placeholder.AddNode("1"));
+        Assert.Throws<InvalidOperationException>(() => wagon.AddNode(container));
+        Assert.Throws<InvalidOperationException>(() => wagon.InsertNode(0, container));
+        Assert.Throws<InvalidOperationException>(() => wagon.ReplaceNode(wagon.Nodes[0], container));
+        Assert.True(nameless.IsLeaf);
+        Assert.True(placeholder.IsLeaf);
+        Assert.Null(container.Parent);
+        Assert.Equal(["1"], Values(container));
+        Assert.Equal(Lines("Wagon (", "\tLights ( )", ")"), processor.Save(document));
+    }
+
+    [Fact]
+    public void RootsWithoutValueCanHaveChildren()
+    {
+        // Arrange
+        SimisDocument document = new();
+        SimisNode detached = new();
+
+        // Act
+        document.Root.AddNode("Wagon").AddNode("Mass").AddNode("10t");
+        detached.AddNode("A");
+
+        // Assert
+        Assert.Equal(Lines("Wagon (", "\tMass ( 10t )", ")"), processor.Save(document));
+        Assert.Equal(["A"], Values(detached));
+    }
+
+    [Fact]
     public void NodesIsReadOnlyLiveView()
     {
         // Arrange

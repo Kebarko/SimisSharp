@@ -198,7 +198,9 @@ public class SimisNode(string? value = null)
     /// </summary>
     /// <returns>The added node.</returns>
     /// <exception cref="ArgumentNullException">When <paramref name="subnode"/> is null.</exception>
-    /// <exception cref="InvalidOperationException">When <paramref name="subnode"/> is this node or one of its ancestors.</exception>
+    /// <exception cref="InvalidOperationException">When <paramref name="subnode"/> is this node or one of its ancestors,
+    /// or when the result would be a block without a value, which cannot be written: this node has no value and is not the root of a tree,
+    /// or <paramref name="subnode"/> has no value but has child nodes.</exception>
     public SimisNode AddNode(SimisNode subnode)
     {
         Attach(subnode);
@@ -226,7 +228,9 @@ public class SimisNode(string? value = null)
     /// <returns>The inserted node.</returns>
     /// <exception cref="ArgumentNullException">When <paramref name="subnode"/> is null.</exception>
     /// <exception cref="ArgumentOutOfRangeException">When <paramref name="index"/> is negative or greater than the number of child nodes.</exception>
-    /// <exception cref="InvalidOperationException">When <paramref name="subnode"/> is this node or one of its ancestors.</exception>
+    /// <exception cref="InvalidOperationException">When <paramref name="subnode"/> is this node or one of its ancestors,
+    /// or when the result would be a block without a value, which cannot be written: this node has no value and is not the root of a tree,
+    /// or <paramref name="subnode"/> has no value but has child nodes.</exception>
     public SimisNode InsertNode(int index, SimisNode subnode)
     {
         ArgumentNullException.ThrowIfNull(subnode);
@@ -248,7 +252,8 @@ public class SimisNode(string? value = null)
     /// <returns>The new node.</returns>
     /// <exception cref="ArgumentNullException">When <paramref name="oldNode"/> or <paramref name="newNode"/> is null.</exception>
     /// <exception cref="ArgumentException">When <paramref name="oldNode"/> is not a child of this node.</exception>
-    /// <exception cref="InvalidOperationException">When <paramref name="newNode"/> is this node or one of its ancestors.</exception>
+    /// <exception cref="InvalidOperationException">When <paramref name="newNode"/> is this node or one of its ancestors,
+    /// or when <paramref name="newNode"/> has no value but has child nodes, which cannot be written.</exception>
     public SimisNode ReplaceNode(SimisNode oldNode, SimisNode newNode)
     {
         ArgumentNullException.ThrowIfNull(oldNode);
@@ -348,10 +353,17 @@ public class SimisNode(string? value = null)
     /// The caller adds it to the child nodes.
     /// </summary>
     /// <exception cref="ArgumentNullException">When <paramref name="subnode"/> is null.</exception>
-    /// <exception cref="InvalidOperationException">When <paramref name="subnode"/> is this node or one of its ancestors.</exception>
+    /// <exception cref="InvalidOperationException">When <paramref name="subnode"/> is this node or one of its ancestors,
+    /// or when the result would be a block without a name, which cannot be written.</exception>
     private void Attach(SimisNode subnode)
     {
         ArgumentNullException.ThrowIfNull(subnode);
+
+        if (Value is null && Parent is not null)
+            throw new InvalidOperationException("A node without a value cannot have child nodes unless it is the root of a tree. Set its Value to name the block.");
+
+        if (subnode.Value is null && !subnode.IsLeaf)
+            throw new InvalidOperationException("A node without a value that has child nodes can only be the root of a tree. Set its Value to name the block.");
 
         for (SimisNode? ancestor = this; ancestor != null; ancestor = ancestor.Parent)
         {
