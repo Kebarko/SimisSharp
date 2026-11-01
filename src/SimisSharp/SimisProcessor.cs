@@ -24,7 +24,7 @@ public class SimisProcessor(ILexer? lexer = null, IParser? parser = null, IWrite
     }
 
     /// <summary>
-    /// Serialize the document and write it to <paramref name="filePath"/> using UTF-16 encoding.
+    /// Serialize the document and write it to <paramref name="filePath"/> as UTF-16LE with a byte order mark, the encoding MSTS reads.
     /// </summary>
     /// <param name="document">Document to save.</param>
     /// <param name="filePath">Target file path to create/overwrite.</param>
@@ -50,15 +50,30 @@ public class SimisProcessor(ILexer? lexer = null, IParser? parser = null, IWrite
     }
 
     /// <summary>
-    /// Load and parse a document from disk using UTF-16 encoding.
+    /// Load and parse a text document from disk, detecting its encoding.
+    /// A byte order mark selects UTF-8, UTF-16 or UTF-32. A file without one is read as UTF-16 when its first or second byte is zero,
+    /// and as UTF-8 otherwise, which also covers ASCII.
     /// </summary>
     /// <param name="filePath">Path to the file to open.</param>
     /// <returns>Parsed document AST.</returns>
+    /// <exception cref="FormatException">When the file is not valid text in the detected encoding.</exception>
     public SimisDocument Load(string filePath)
     {
-        using FileStream stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-        using StreamReader streamReader = new StreamReader(stream, Encoding.Unicode, leaveOpen: false);
-        string content = streamReader.ReadToEnd();
-        return Parse(content);
+        return Load(filePath, null);
+    }
+
+    /// <summary>
+    /// Load and parse a text document from disk, detecting its encoding as <see cref="Load(string)"/> does,
+    /// but reading a file that has no byte order mark and is not UTF-16 with <paramref name="encoding"/>.
+    /// </summary>
+    /// <param name="filePath">Path to the file to open.</param>
+    /// <param name="encoding">Encoding of a file without a byte order mark that is not UTF-16, such as an ANSI file. Null means UTF-8.
+    /// ANSI code pages such as Windows-1250 require registering <c>System.Text.CodePagesEncodingProvider</c> first.</param>
+    /// <returns>Parsed document AST.</returns>
+    /// <exception cref="FormatException">When the file is not valid text in the detected encoding.</exception>
+    public SimisDocument Load(string filePath, Encoding? encoding)
+    {
+        byte[] bytes = File.ReadAllBytes(filePath);
+        return Parse(SimisTextDecoder.Decode(bytes, encoding));
     }
 }

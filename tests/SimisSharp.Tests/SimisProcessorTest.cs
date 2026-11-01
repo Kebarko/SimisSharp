@@ -6,13 +6,28 @@ namespace KE.MSTS.SimisSharp.Tests;
 public class SimisProcessorTest
 {
     private const string Text = "SIMISA@@@@@@@@@@JINX0D0t______\r\n\r\nWagon ( Mass ( 10t ) )\r\n";
+    private const string NonAsciiText = "SIMISA@@@@@@@@@@JINX0D0t______\r\n\r\nWagon ( Name ( \"Lokomotíva Škoda\" ) )\r\n";
 
     private readonly SimisProcessor processor = new();
+
+    /// <summary>
+    /// Windows-1250, the ANSI code page of Central European Windows, which .NET provides after registering the code pages provider.
+    /// </summary>
+    private static Encoding CentralEuropeanAnsi
+    {
+        get
+        {
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+            return Encoding.GetEncoding(1250);
+        }
+    }
 
     [Theory]
     [InlineData("utf-16")]
     [InlineData("utf-16BE")]
     [InlineData("utf-8")]
+    [InlineData("utf-32")]
+    [InlineData("utf-32BE")]
     public void LoadsFileWithByteOrderMark(string encodingName)
     {
         // Arrange
@@ -26,17 +41,86 @@ public class SimisProcessorTest
         AssertWagonDocument(document);
     }
 
-    [Fact(Skip = "Known bug: a file without a byte order mark is read as UTF-16 and parsed as garbage.")]
-    public void LoadsUtf8FileWithoutByteOrderMark()
+    [Theory]
+    [InlineData("utf-16")]
+    [InlineData("utf-16BE")]
+    [InlineData("utf-8")]
+    [InlineData("us-ascii")]
+    public void LoadsFileWithoutByteOrderMark(string encodingName)
     {
         // Arrange
-        byte[] content = new UTF8Encoding(false).GetBytes(Text);
+        byte[] content = Encoding.GetEncoding(encodingName).GetBytes(Text);
 
         // Act
         SimisDocument document = WithTempFile(content, processor.Load);
 
         // Assert
         AssertWagonDocument(document);
+    }
+
+    [Theory]
+    [InlineData("utf-16", false)]
+    [InlineData("utf-16", true)]
+    [InlineData("utf-8", false)]
+    [InlineData("utf-8", true)]
+    public void LoadsNonAsciiText(string encodingName, bool withByteOrderMark)
+    {
+        // Arrange
+        Encoding encoding = Encoding.GetEncoding(encodingName);
+        byte[] content = [.. withByteOrderMark ? encoding.GetPreamble() : [], .. encoding.GetBytes(NonAsciiText)];
+
+        // Act
+        SimisDocument document = WithTempFile(content, processor.Load);
+
+        // Assert
+        AssertNonAsciiDocument(document);
+    }
+
+    [Fact]
+    public void LoadsAnsiFileWithGivenEncoding()
+    {
+        // Arrange
+        byte[] content = CentralEuropeanAnsi.GetBytes(NonAsciiText);
+
+        // Act
+        SimisDocument document = WithTempFile(content, path => processor.Load(path, CentralEuropeanAnsi));
+
+        // Assert
+        AssertNonAsciiDocument(document);
+    }
+
+    [Fact]
+    public void ByteOrderMarkWinsOverGivenEncoding()
+    {
+        // Arrange
+        byte[] content = [.. Encoding.UTF8.GetPreamble(), .. Encoding.UTF8.GetBytes(NonAsciiText)];
+
+        // Act
+        SimisDocument document = WithTempFile(content, path => processor.Load(path, CentralEuropeanAnsi));
+
+        // Assert
+        AssertNonAsciiDocument(document);
+    }
+
+    [Fact]
+    public void LoadRejectsAnsiFileWithoutGivenEncoding()
+    {
+        // Arrange
+        byte[] content = CentralEuropeanAnsi.GetBytes(NonAsciiText);
+
+        // Act & Assert
+        FormatException exception = Assert.Throws<FormatException>(() => WithTempFile(content, processor.Load));
+        Assert.Contains("utf-8", exception.Message);
+    }
+
+    [Fact]
+    public void LoadRejectsTruncatedUtf16File()
+    {
+        // Arrange
+        byte[] content = [.. Encoding.Unicode.GetPreamble(), .. Encoding.Unicode.GetBytes(Text), 0x41];
+
+        // Act & Assert
+        Assert.Throws<FormatException>(() => WithTempFile(content, processor.Load));
     }
 
     [Theory(Skip = "Known bug: binary and compressed SIMIS files are read as text without an error.")]
@@ -134,6 +218,11 @@ public class SimisProcessorTest
         IList<SimisNode> nodes = document.Root.GetNodes();
         Assert.Equal(["SIMISA@@@@@@@@@@JINX0D0t______", "Wagon"], nodes.Select(n => n.Value));
         Assert.Equal("10t", Assert.Single(SimisPathService.FindNodesByPath(document.Root, "/Wagon/Mass/[1]")).Value);
+    }
+
+    private static void AssertNonAsciiDocument(SimisDocument document)
+    {
+        Assert.Equal("Lokomotíva Škoda", Assert.Single(SimisPathService.FindNodesByPath(document.Root, "/Wagon/Name/[1]")).Value);
     }
 
     private static T WithTempFile<T>(byte[] content, Func<string, T> action)
