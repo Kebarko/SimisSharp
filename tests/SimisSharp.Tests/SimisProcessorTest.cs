@@ -177,7 +177,7 @@ public class SimisProcessorTest
         }
     }
 
-    [Theory(Skip = "Known bug: without collapsing, every run of blank lines is written with one blank line too many.")]
+    [Theory]
     [InlineData(1)]
     [InlineData(2)]
     [InlineData(3)]
@@ -206,6 +206,57 @@ public class SimisProcessorTest
 
         // Assert
         Assert.Equal(Lines("A ( 1 )", "", "B ( 2 )"), actual);
+    }
+
+    [Fact]
+    public void BlankLinesInsideBlocksAreKept()
+    {
+        // Arrange
+        string input = Lines(
+            "SIMISA@@@@@@@@@@JINX0D0t______",
+            "",
+            "",
+            "Wagon (",
+            "",
+            "",
+            "\tMass ( 10t )",
+            "",
+            "\tSize ( 1 2 3 )",
+            "",
+            "",
+            ")",
+            "",
+            "",
+            "Engine ( 1 )");
+        string collapsed = Lines(
+            "SIMISA@@@@@@@@@@JINX0D0t______",
+            "",
+            "Wagon (",
+            "",
+            "\tMass ( 10t )",
+            "",
+            "\tSize ( 1 2 3 )",
+            "",
+            ")",
+            "",
+            "Engine ( 1 )");
+        SimisDocument document = processor.Parse(input);
+        SimisNode wagon = document.Root.Nodes[1];
+
+        // Act
+        string kept = processor.Save(document, new WriterOptions { CollapseEmptyLines = false });
+        string collapsedActual = processor.Save(document);
+        string removed = processor.Save(document, new WriterOptions { PreserveEmptyLines = false });
+
+        // Assert
+        Assert.Equal(2, wagon.Formatting.LeadingEmptyLines);
+        Assert.Equal(2, wagon.Nodes[0].Formatting.LeadingEmptyLines);
+        Assert.Equal(1, wagon.Nodes[1].Formatting.LeadingEmptyLines);
+        Assert.Equal(2, wagon.Nodes[1].Formatting.TrailingEmptyLines);
+        Assert.Equal(2, document.Root.Nodes[2].Formatting.LeadingEmptyLines);
+        Assert.Equal(input, kept);
+        Assert.Equal(collapsed, collapsedActual);
+        Assert.Equal(Lines("SIMISA@@@@@@@@@@JINX0D0t______", "Wagon (", "\tMass ( 10t )", "\tSize ( 1 2 3 )", ")", "Engine ( 1 )"), removed);
     }
 
     [Theory(Skip = "Known bug: unbalanced parentheses are accepted silently.")]

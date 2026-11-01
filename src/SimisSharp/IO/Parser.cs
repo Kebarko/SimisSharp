@@ -14,6 +14,7 @@ internal class Parser : IParser
         SimisDocument document = new();
         SimisNode parent = document.Root;
         SimisNode node = document.Root;
+        // Line breaks since the previous token. Two line breaks in a row make one blank line.
         byte newLines = 0;
         bool isCommentHead = false;
         bool isCommentBody = false;
@@ -45,7 +46,7 @@ internal class Parser : IParser
                     node.AddNode(new SimisNode());
 
                 if (newLines > 1)
-                    node.Parent?.Formatting.TrailingEmptyLines = newLines;
+                    node.Parent?.Formatting.TrailingEmptyLines = (byte)(newLines - 1);
 
                 parent = parent.Parent ?? document.Root;
                 newLines = 0;
@@ -71,7 +72,7 @@ internal class Parser : IParser
                 node.Formatting.IsOnSameLineAsPrevious = !parent.IsLeaf && newLines == 0;
 
                 if (newLines > 1)
-                    node.Formatting.LeadingEmptyLines = newLines;
+                    node.Formatting.LeadingEmptyLines = (byte)(newLines - 1);
 
                 parent.AddNode(node);
                 newLines = 0;
