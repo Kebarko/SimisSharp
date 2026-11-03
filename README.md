@@ -20,7 +20,6 @@ Binary SIMIS files, such as most shapes (`.s`), terrain (`.t`) and textures (`.a
 - A file with an extra or a missing closing parenthesis, or with unbalanced quotes, fails to load, although MSTS and Open Rails read it. In a test on all 19,937 text SIMIS files of an MSTS installation, 63 files (0.3%) failed for these reasons, and every other file was saved back with the same content.
 - Saving keeps the content of a file, but not its exact layout: indentation, spacing and line breaks are rewritten.
 - The Open Rails `include` directive is read as an ordinary block. The included file is not loaded.
-- Lines of saved files end with the line ending of the operating system: CRLF on Windows, as MSTS uses, but LF on Linux and macOS.
 
 ## Requirements
 
@@ -111,7 +110,7 @@ if (maxPower != null && maxPower.TryGetNumber(out double power, out string unit)
 processor.Save(document, @"C:\MSTS\TRAINS\TRAINSET\MyLoco\MyLoco.eng");
 ```
 
-`Save` writes UTF-16 with a byte order mark, as MSTS does. It writes to a temporary file first, which then replaces the target, so a failed save leaves the original file unchanged. To get the text instead of writing a file, call `processor.Save(document)`.
+`Save` writes UTF-16 with a byte order mark and CRLF line endings, as MSTS does, on every operating system. It writes to a temporary file first, which then replaces the target, so a failed save leaves the original file unchanged. To get the text instead of writing a file, call `processor.Save(document)`.
 
 `SimisProcessor` holds no state, so one instance can be shared, also between threads. Documents and nodes are not thread-safe.
 

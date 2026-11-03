@@ -10,8 +10,14 @@ namespace KE.MSTS.SimisSharp.IO;
 internal static class Writer
 {
     /// <summary>
+    /// The line break the writer writes: CRLF, which MSTS uses, on every operating system.
+    /// </summary>
+    private const string NewLine = "\r\n";
+
+    /// <summary>
     /// Write the provided document to text according to the options.
-    /// Lines end with <see cref="Environment.NewLine"/>, and text that is not empty ends with a line break.
+    /// Lines end with CRLF on every operating system, and text that is not empty ends with a line break.
+    /// Text copied from the parsed file, such as a comment block or a quoted string that spans lines, keeps its own line breaks.
     /// </summary>
     /// <param name="document">The document to write.</param>
     /// <param name="options">Writer options, or null for the defaults.</param>
@@ -25,7 +31,7 @@ internal static class Writer
         WriteRootNode(sb, document.Root, options);
         
         if (sb.Length > 0 && !EndsWithNewLine(sb))
-            sb.AppendLine();
+            sb.Append(NewLine);
 
         return sb.ToString();
     }
@@ -61,7 +67,7 @@ internal static class Writer
         bool isCommentOnSameLine = node.IsComment && options.PreserveCommentPosition && node.IsOnSameLineAsPrevious;
 
         if (sb.Length > 0 && level == 0 && !isCommentOnSameLine)
-            sb.AppendLine();
+            sb.Append(NewLine);
 
         WriteEmptyLines(sb, options.PreserveEmptyLines, node.LeadingEmptyLines, options.CollapseEmptyLines);
 
@@ -116,7 +122,7 @@ internal static class Writer
                         {
                             if (currentColumn == 0)
                             {
-                                sb.AppendLine();
+                                sb.Append(NewLine);
                                 sb.Append(indent);
                                 sb.Append(new string(options.IndentCharacter, options.IndentSize));
                             }
@@ -153,7 +159,7 @@ internal static class Writer
                     if (!inline && !(subnode.IsComment && options.PreserveCommentPosition && subnode.IsOnSameLineAsPrevious))
                     {
                         closeAtNextLine = true;
-                        sb.AppendLine(); 
+                        sb.Append(NewLine);
                     }
 
                     WriteNode(sb, subnode, options, level + 1, inline, keepQuotes);
@@ -162,7 +168,7 @@ internal static class Writer
 
             if (closeAtNextLine)
             {
-                sb.AppendLine();
+                sb.Append(NewLine);
                 sb.Append(indent);
             }
             else if (!lastIsVerbatim)
@@ -304,26 +310,24 @@ internal static class Writer
                 if (i > 0 && collapseEmptyLines)
                     break;
 
-                sb.AppendLine();
+                sb.Append(NewLine);
             }
         }
     }
 
     /// <summary>
-    /// Returns true if the current StringBuilder ends with the environment newline sequence.
+    /// Returns true if the current StringBuilder ends with the line break the writer writes.
     /// </summary>
     /// <param name="sb">The text written so far.</param>
-    /// <returns>True when the text ends with <see cref="Environment.NewLine"/>.</returns>
+    /// <returns>True when the text ends with <see cref="NewLine"/>.</returns>
     private static bool EndsWithNewLine(StringBuilder sb)
     {
-        string newLine = Environment.NewLine;
-
-        if (sb.Length < newLine.Length)
+        if (sb.Length < NewLine.Length)
             return false;
 
-        for (int i = 0; i < newLine.Length; i++)
+        for (int i = 0; i < NewLine.Length; i++)
         {
-            if (sb[sb.Length - newLine.Length + i] != newLine[i])
+            if (sb[sb.Length - NewLine.Length + i] != NewLine[i])
                 return false;
         }
 

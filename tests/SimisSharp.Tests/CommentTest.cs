@@ -65,7 +65,7 @@ public class CommentTest
         string actual = processor.Save(processor.Parse(input));
 
         // Assert
-        Assert.Equal(input + Environment.NewLine, actual);
+        Assert.Equal(input + "\r\n", actual);
     }
 
     [Theory]
@@ -84,7 +84,7 @@ public class CommentTest
 
         // Assert
         Assert.DoesNotContain(Descendants(document.Root), n => n.IsComment);
-        Assert.Equal(input + Environment.NewLine, actual);
+        Assert.Equal(input + "\r\n", actual);
     }
 
     [Theory]
@@ -147,7 +147,7 @@ public class CommentTest
 
     private static string Lines(params string[] lines)
     {
-        return string.Join(Environment.NewLine, lines) + Environment.NewLine;
+        return string.Join("\r\n", lines) + "\r\n";
     }
 
     private static IEnumerable<SimisNode> Descendants(SimisNode node)

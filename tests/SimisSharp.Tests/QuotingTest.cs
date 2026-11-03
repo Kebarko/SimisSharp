@@ -21,7 +21,7 @@ public class QuotingTest
         string actual = processor.Save(processor.Parse(input), new WriterOptions { PreserveQuotes = false });
 
         // Assert
-        Assert.Equal(expected + Environment.NewLine, actual);
+        Assert.Equal(expected + "\r\n", actual);
     }
 
     [Theory]
@@ -95,7 +95,7 @@ public class QuotingTest
     [InlineData(@"A ( a\""b )")]
     public void UnchangedValuesAreWrittenAsRead(string input)
     {
-        Assert.Equal(input + Environment.NewLine, processor.Save(processor.Parse(input)));
+        Assert.Equal(input + "\r\n", processor.Save(processor.Parse(input)));
     }
 
     [Theory]
@@ -118,7 +118,7 @@ public class QuotingTest
         SimisNode reparsed = processor.Parse(text).Root.Nodes[0].Nodes[0];
 
         // Assert
-        Assert.Equal($"A ( {expectedText} ){Environment.NewLine}", text);
+        Assert.Equal($"A ( {expectedText} )\r\n", text);
         Assert.Equal(value, reparsed.Value);
     }
 
@@ -129,7 +129,7 @@ public class QuotingTest
     [InlineData(@"A ( ""a\""b"" )", @"A ( ""a\""b"" )")]
     public void DroppingQuotesKeepsEscapesWhereNeeded(string input, string expected)
     {
-        Assert.Equal(expected + Environment.NewLine, processor.Save(processor.Parse(input), new WriterOptions { PreserveQuotes = false }));
+        Assert.Equal(expected + "\r\n", processor.Save(processor.Parse(input), new WriterOptions { PreserveQuotes = false }));
     }
 
     [Theory]

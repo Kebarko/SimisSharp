@@ -70,7 +70,7 @@ public class WriterTest
         SimisDocument reparsed = processor.Parse(actual);
 
         // Assert
-        Assert.Equal(expected.Replace("\r\n", Environment.NewLine) + Environment.NewLine, actual);
+        Assert.Equal(expected + "\r\n", actual);
         Assert.Equal(Describe(document.Root), Describe(reparsed.Root));
     }
 
@@ -103,6 +103,6 @@ public class WriterTest
 
     private static string Lines(params string[] lines)
     {
-        return string.Join(Environment.NewLine, lines) + Environment.NewLine;
+        return string.Join("\r\n", lines) + "\r\n";
     }
 }

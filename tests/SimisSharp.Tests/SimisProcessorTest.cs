@@ -362,7 +362,7 @@ public class SimisProcessorTest
     public void BlankLinesAreKeptWithoutCollapsing(int blankLines)
     {
         // Arrange
-        string input = Lines("A ( 1 )") + string.Concat(Enumerable.Repeat(Environment.NewLine, blankLines)) + Lines("B ( 2 )");
+        string input = Lines("A ( 1 )") + string.Concat(Enumerable.Repeat("\r\n", blankLines)) + Lines("B ( 2 )");
 
         // Act
         string actual = processor.Save(processor.Parse(input), new WriterOptions { CollapseEmptyLines = false });
@@ -377,7 +377,7 @@ public class SimisProcessorTest
     public void BlankLinesAreCollapsed(int blankLines)
     {
         // Arrange
-        string input = Lines("A ( 1 )") + string.Concat(Enumerable.Repeat(Environment.NewLine, blankLines)) + Lines("B ( 2 )");
+        string input = Lines("A ( 1 )") + string.Concat(Enumerable.Repeat("\r\n", blankLines)) + Lines("B ( 2 )");
 
         // Act
         string actual = processor.Save(processor.Parse(input));
@@ -498,8 +498,7 @@ public class SimisProcessorTest
     }
 
     /// <summary>
-    /// MSTS expects CRLF line endings. The writer uses <see cref="Environment.NewLine"/>,
-    /// so this test only fails on platforms whose newline is not CRLF.
+    /// MSTS expects CRLF line endings, which the writer uses on every operating system, also for text read with LF line endings.
     /// </summary>
     [Fact]
     public void WriterUsesCrLfLineEndings()
@@ -509,6 +508,19 @@ public class SimisProcessorTest
 
         // Assert
         Assert.Equal("A ( 1 )\r\nB (\r\n\tC ( 2 )\r\n)\r\n", actual);
+    }
+
+    [Fact]
+    public void TextCopiedFromFileKeepsItsLineBreaks()
+    {
+        // Arrange: the comment block and the quoted string span lines, and their line feeds are part of the text that is copied.
+        string input = "A (\n\tcomment ( a\nb )\n\tB ( \"x\ny\" )\n)\n";
+
+        // Act
+        string actual = processor.Save(processor.Parse(input));
+
+        // Assert
+        Assert.Equal("A (\r\n\tcomment ( a\nb )\r\n\tB ( \"x\ny\" )\r\n)\r\n", actual);
     }
 
     private static void AssertWagonDocument(SimisDocument document)
@@ -587,6 +599,6 @@ public class SimisProcessorTest
 
     private static string Lines(params string[] lines)
     {
-        return string.Join(Environment.NewLine, lines) + Environment.NewLine;
+        return string.Join("\r\n", lines) + "\r\n";
     }
 }

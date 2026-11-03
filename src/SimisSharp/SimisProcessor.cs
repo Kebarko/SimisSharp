@@ -11,7 +11,8 @@ public class SimisProcessor
 {
     /// <summary>
     /// Serialize the document into a string using the provided writer <paramref name="options"/>.
-    /// Lines end with <see cref="Environment.NewLine"/>, and text that is not empty ends with a line break.
+    /// Lines end with CRLF, the line ending MSTS uses, on every operating system, and text that is not empty ends with a line break.
+    /// Text copied from the parsed file, such as a comment block or a quoted string that spans lines, keeps its own line breaks.
     /// </summary>
     /// <param name="document">Document to save.</param>
     /// <param name="options">Optional writer options.</param>

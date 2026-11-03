@@ -412,6 +412,6 @@ public class SimisNodeEditingTest
 
     private static string Lines(params string[] lines)
     {
-        return string.Join(Environment.NewLine, lines) + Environment.NewLine;
+        return string.Join("\r\n", lines) + "\r\n";
     }
 }

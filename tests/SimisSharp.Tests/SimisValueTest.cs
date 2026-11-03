@@ -236,7 +236,7 @@ public class SimisValueTest
         count.SetValue(4.5f);
 
         Assert.Equal(
-            string.Join(Environment.NewLine,
+            string.Join("\r\n",
                 "Wagon (",
                 "\tMass ( 12.5t )",
                 "\tMaxPower ( \"1000kW\" )",
