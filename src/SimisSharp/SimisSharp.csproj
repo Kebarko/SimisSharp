@@ -5,20 +5,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>KE.MSTS.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
-    <AssemblyVersion>1.0.*</AssemblyVersion>
+    <Version>0.1.0</Version>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <Deterministic>False</Deterministic>
-    <GenerateAssemblyFileVersionAttribute>False</GenerateAssemblyFileVersionAttribute>
-    <GenerateAssemblyInformationalVersionAttribute>False</GenerateAssemblyInformationalVersionAttribute>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <Deterministic>False</Deterministic>
-    <GenerateAssemblyFileVersionAttribute>False</GenerateAssemblyFileVersionAttribute>
-    <GenerateAssemblyInformationalVersionAttribute>False</GenerateAssemblyInformationalVersionAttribute>
   </PropertyGroup>
 
 </Project>
