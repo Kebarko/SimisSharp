@@ -5,14 +5,19 @@ namespace KE.MSTS.SimisSharp.IO;
 
 /// <summary>
 /// Decodes the bytes of a text SIMIS file. MSTS writes UTF-16LE with a byte order mark, while Open Rails also reads UTF-8 and ASCII files.
-/// A compressed file is decompressed first.
+/// A compressed file is decompressed first. Content that is not a text SIMIS document is rejected.
 /// </summary>
 internal static class SimisTextDecoder
 {
     /// <summary>
-    /// The header of an uncompressed file. A compressed file has another header in its place.
+    /// The header of an uncompressed file, which the subheader follows. A compressed file has another header in its place.
     /// </summary>
     private const string UncompressedHeader = "SIMISA@@@@@@@@@@";
+
+    /// <summary>
+    /// The start of the subheader: <c>JINX0</c>, which a two-character file type and the format letter follow, as in <c>JINX0D0t</c>.
+    /// </summary>
+    private const string SubheaderStart = "JINX0";
 
     /// <summary>
     /// Length of the header of a compressed file: <c>SIMISA@F</c>, the uncompressed length as a 32-bit integer and <c>@@@@</c>.
@@ -33,6 +38,11 @@ internal static class SimisTextDecoder
     /// Message of the exception thrown for a binary file.
     /// </summary>
     private const string BinaryNotSupported = "Binary SIMIS files are not supported, compressed or not. Only text SIMIS files can be read.";
+
+    /// <summary>
+    /// Message of the exception thrown for content that is not a SIMIS document.
+    /// </summary>
+    private const string NotSimisDocument = "The file is not a SIMIS document. A text SIMIS file starts with a header such as SIMISA@@@@@@@@@@JINX0D0t______.";
 
     /// <summary>
     /// Strict UTF-8 decoder, which throws on invalid bytes instead of replacing them, so that text in another encoding is reported rather than misread.
@@ -88,22 +98,26 @@ internal static class SimisTextDecoder
     /// Decodes <paramref name="bytes"/> to text. A byte order mark selects UTF-8, UTF-16 or UTF-32.
     /// Without one, text whose first or second byte is zero is UTF-16, because a SIMIS file starts with an ASCII character,
     /// and other text is decoded with <paramref name="encoding"/>, which defaults to UTF-8.
+    /// The text must start with the header of a text SIMIS file, such as <c>SIMISA@@@@@@@@@@JINX0D0t______</c>, which is checked before the rest is decoded.
     /// A compressed file is decompressed first (see <see cref="DecodeCompressed"/>).
     /// </summary>
     /// <param name="bytes">Content of the file.</param>
     /// <param name="encoding">Encoding of text that has no byte order mark and is not UTF-16, such as an ANSI file. Defaults to UTF-8.</param>
     /// <returns>The decoded text without the byte order mark.</returns>
-    /// <exception cref="NotSupportedException">When the bytes are a binary SIMIS file, compressed or not, or a compressed file that does not hold SIMIS text.</exception>
+    /// <exception cref="NotSupportedException">When the bytes are not a SIMIS document, or are a binary SIMIS file, compressed or not.</exception>
     /// <exception cref="FormatException">When the bytes are not valid text in the detected encoding, or the compressed data is truncated or corrupt.</exception>
     public static string Decode(byte[] bytes, Encoding? encoding = null)
     {
         if (bytes.AsSpan().StartsWith("SIMISA@F"u8))
             return DecodeCompressed(bytes, encoding);
 
-        if (IsBinary(bytes))
-            throw new NotSupportedException(BinaryNotSupported);
+        (Encoding detected, int bomLength) = DetectEncoding(bytes, encoding);
+        ReadOnlySpan<byte> text = bytes.AsSpan(bomLength);
 
-        return DecodeText(bytes, encoding);
+        string header = DecodeStart(text, detected, UncompressedHeader.Length + FormatIndex + 1);
+        CheckSubheader(header.StartsWith(UncompressedHeader, StringComparison.Ordinal) ? header.AsSpan(UncompressedHeader.Length) : []);
+
+        return DecodeText(text, detected, bomLength > 0);
     }
 
     /// <summary>
@@ -115,7 +129,7 @@ internal static class SimisTextDecoder
     /// <param name="bytes">Content of the file, which starts with <c>SIMISA@F</c>.</param>
     /// <param name="encoding">Encoding of text that has no byte order mark and is not UTF-16, or null for UTF-8.</param>
     /// <returns>The text an uncompressed file with the same content has, which starts with <c>SIMISA@@@@@@@@@@</c>.</returns>
-    /// <exception cref="NotSupportedException">When the file holds binary data rather than text.</exception>
+    /// <exception cref="NotSupportedException">When the file holds binary data or no SIMIS document, as a compressed texture does.</exception>
     /// <exception cref="FormatException">When the file is truncated or corrupt, or its text is not valid in the detected encoding.</exception>
     private static string DecodeCompressed(byte[] bytes, Encoding? encoding)
     {
@@ -123,15 +137,13 @@ internal static class SimisTextDecoder
         if (data.IsEmpty)
             throw new FormatException("The compressed file is truncated.");
 
-        byte format = GetFormat(data);
-        if (format == 'b')
-            throw new NotSupportedException(BinaryNotSupported);
-
-        if (format != 't')
-            throw new NotSupportedException("The compressed file does not hold SIMIS text. Only text SIMIS files can be read.");
+        CheckSubheader(DecodeStart(data, Encoding.ASCII, FormatIndex + 1));
 
         ReadOnlySpan<byte> subheader = data[..Math.Min(SubheaderLength, data.Length)];
-        return string.Concat(UncompressedHeader, Encoding.Latin1.GetString(subheader), DecodeText(data[subheader.Length..], encoding));
+        ReadOnlySpan<byte> text = data[subheader.Length..];
+        (Encoding detected, int bomLength) = DetectEncoding(text, encoding);
+
+        return string.Concat(UncompressedHeader, Encoding.Latin1.GetString(subheader), DecodeText(text[bomLength..], detected, bomLength > 0));
     }
 
     /// <summary>
@@ -162,50 +174,67 @@ internal static class SimisTextDecoder
     }
 
     /// <summary>
-    /// Decodes text without a SIMIS header check, as <see cref="Decode"/> describes.
+    /// Decodes text with the encoding detected for it.
     /// </summary>
-    /// <param name="bytes">The text to decode.</param>
-    /// <param name="encoding">Encoding of text that has no byte order mark and is not UTF-16, or null for UTF-8.</param>
-    /// <returns>The decoded text without the byte order mark.</returns>
-    /// <exception cref="FormatException">When the bytes are not valid text in the detected encoding.</exception>
-    private static string DecodeText(ReadOnlySpan<byte> bytes, Encoding? encoding)
+    /// <param name="bytes">The text to decode, without its byte order mark.</param>
+    /// <param name="encoding">The detected encoding.</param>
+    /// <param name="hasByteOrderMark">True when a byte order mark selected the encoding, which decides the hint in the error message.</param>
+    /// <returns>The decoded text.</returns>
+    /// <exception cref="FormatException">When the bytes are not valid text in the encoding.</exception>
+    private static string DecodeText(ReadOnlySpan<byte> bytes, Encoding encoding, bool hasByteOrderMark)
     {
-        (Encoding detected, int bomLength) = DetectEncoding(bytes, encoding);
-
         try
         {
-            return detected.GetString(bytes[bomLength..]);
+            return encoding.GetString(bytes);
         }
         catch (DecoderFallbackException ex)
         {
-            string hint = ReferenceEquals(detected, Utf8) && bomLength == 0
+            string hint = ReferenceEquals(encoding, Utf8) && !hasByteOrderMark
                 ? " A file without a byte order mark is read as UTF-8 unless its encoding, such as an ANSI code page, is passed to Load."
                 : string.Empty;
 
-            throw new FormatException($"The file is not valid {detected.WebName} text.{hint}", ex);
+            throw new FormatException($"The file is not valid {encoding.WebName} text.{hint}", ex);
         }
     }
 
     /// <summary>
-    /// Returns true when <paramref name="bytes"/> start with the ASCII header of an uncompressed binary SIMIS file:
-    /// <c>SIMISA@@@@@@@@@@</c> and a subheader for binary data, such as <c>JINX0s1b</c>.
+    /// Decodes the first <paramref name="length"/> characters of <paramref name="bytes"/> to check the SIMIS header, whose characters are ASCII.
+    /// Only the bytes of these characters are decoded, so the content of a file that is not a SIMIS document is never decoded.
     /// </summary>
-    /// <param name="bytes">Content of the file.</param>
-    /// <returns>True when the file is binary.</returns>
-    private static bool IsBinary(ReadOnlySpan<byte> bytes)
+    /// <param name="bytes">The bytes to decode.</param>
+    /// <param name="encoding">Encoding of the bytes.</param>
+    /// <param name="length">Number of characters to decode.</param>
+    /// <returns>The characters, fewer when the bytes are shorter, or an empty string when the bytes are not valid in the encoding.</returns>
+    private static string DecodeStart(ReadOnlySpan<byte> bytes, Encoding encoding, int length)
     {
-        return bytes.StartsWith("SIMISA@@@@@@@@@@"u8) && GetFormat(bytes[UncompressedHeader.Length..]) == 'b';
+        // Every ASCII character takes the same number of bytes in the encodings SIMIS files use.
+        int byteCount = Math.Min(bytes.Length, encoding.GetByteCount("@") * length);
+
+        try
+        {
+            return encoding.GetString(bytes[..byteCount]);
+        }
+        catch (DecoderFallbackException)
+        {
+            return string.Empty;
+        }
     }
 
     /// <summary>
-    /// Returns the format letter of the ASCII subheader that <paramref name="data"/> starts with. The subheader is <c>JINX0</c>,
-    /// a two-character file type and <c>b</c> for binary or <c>t</c> for text, as in <c>JINX0s1b</c>.
+    /// Checks that <paramref name="subheader"/> is that of a text file. The subheader is <c>JINX0</c>,
+    /// a two-character file type and <c>b</c> for binary or <c>t</c> for text, as in <c>JINX0D0t</c>.
     /// </summary>
-    /// <param name="data">The data that follows the SIMIS header.</param>
-    /// <returns>The format letter, or 0 when <paramref name="data"/> does not start with a subheader.</returns>
-    private static byte GetFormat(ReadOnlySpan<byte> data)
+    /// <param name="subheader">The start of the subheader, or an empty span when the content has no SIMIS header.</param>
+    /// <exception cref="NotSupportedException">When the subheader is that of a binary file, or is missing.</exception>
+    private static void CheckSubheader(ReadOnlySpan<char> subheader)
     {
-        return data.StartsWith("JINX0"u8) && data.Length > FormatIndex ? data[FormatIndex] : (byte)0;
+        char format = subheader.StartsWith(SubheaderStart) && subheader.Length > FormatIndex ? subheader[FormatIndex] : '\0';
+
+        if (format == 'b')
+            throw new NotSupportedException(BinaryNotSupported);
+
+        if (format != 't')
+            throw new NotSupportedException(NotSimisDocument);
     }
 
     /// <summary>

@@ -95,6 +95,8 @@ public class SimisProcessor
     /// Load and parse a text document from disk, detecting its encoding.
     /// A byte order mark selects UTF-8, UTF-16 or UTF-32. A file without one is read as UTF-16 when its first or second byte is zero,
     /// and as UTF-8 otherwise, which also covers ASCII.
+    /// The text must start with the header of a text SIMIS file, such as <c>SIMISA@@@@@@@@@@JINX0D0t______</c>.
+    /// A file that does not, such as a texture or a text file of another kind, is rejected before the rest of it is decoded.
     /// A compressed file, whose header starts with <c>SIMISA@F</c>, is decompressed first. Its text after the subheader, such as <c>JINX0D0t______</c>,
     /// is decoded the same way, and the document gets the header of an uncompressed file, <c>SIMISA@@@@@@@@@@</c>, so it is saved uncompressed.
     /// </summary>
@@ -102,7 +104,7 @@ public class SimisProcessor
     /// <returns>Parsed document AST.</returns>
     /// <exception cref="IOException">When the file cannot be read, such as when it does not exist.</exception>
     /// <exception cref="UnauthorizedAccessException">When reading the file is not permitted.</exception>
-    /// <exception cref="NotSupportedException">When the file is a binary SIMIS file, compressed or not, or a compressed file that does not hold SIMIS text.</exception>
+    /// <exception cref="NotSupportedException">When the file is not a SIMIS document, such as a texture, or is a binary SIMIS file, compressed or not.</exception>
     /// <exception cref="FormatException">When the file is not valid text in the detected encoding, or its compressed data is corrupt.</exception>
     /// <exception cref="SimisParseException">When the text is not well-formed (see <see cref="Parse(string)"/>).</exception>
     public SimisDocument Load(string filePath)
@@ -120,7 +122,7 @@ public class SimisProcessor
     /// <returns>Parsed document AST.</returns>
     /// <exception cref="IOException">When the file cannot be read, such as when it does not exist.</exception>
     /// <exception cref="UnauthorizedAccessException">When reading the file is not permitted.</exception>
-    /// <exception cref="NotSupportedException">When the file is a binary SIMIS file, compressed or not, or a compressed file that does not hold SIMIS text.</exception>
+    /// <exception cref="NotSupportedException">When the file is not a SIMIS document, such as a texture, or is a binary SIMIS file, compressed or not.</exception>
     /// <exception cref="FormatException">When the file is not valid text in the detected encoding, or its compressed data is corrupt.</exception>
     /// <exception cref="SimisParseException">When the text is not well-formed (see <see cref="Parse(string)"/>).</exception>
     public SimisDocument Load(string filePath, Encoding? encoding)
@@ -136,7 +138,7 @@ public class SimisProcessor
     /// <returns>The text of the file without the byte order mark. The text of a compressed file is the text the uncompressed file has.</returns>
     /// <exception cref="IOException">When the file cannot be read, such as when it does not exist.</exception>
     /// <exception cref="UnauthorizedAccessException">When reading the file is not permitted.</exception>
-    /// <exception cref="NotSupportedException">When the file is a binary SIMIS file, compressed or not, or a compressed file that does not hold SIMIS text.</exception>
+    /// <exception cref="NotSupportedException">When the file is not a SIMIS document, such as a texture, or is a binary SIMIS file, compressed or not.</exception>
     /// <exception cref="FormatException">When the file is not valid text in the detected encoding, or its compressed data is corrupt.</exception>
     public string LoadText(string filePath)
     {
@@ -151,7 +153,7 @@ public class SimisProcessor
     /// <returns>The text of the file without the byte order mark. The text of a compressed file is the text the uncompressed file has.</returns>
     /// <exception cref="IOException">When the file cannot be read, such as when it does not exist.</exception>
     /// <exception cref="UnauthorizedAccessException">When reading the file is not permitted.</exception>
-    /// <exception cref="NotSupportedException">When the file is a binary SIMIS file, compressed or not, or a compressed file that does not hold SIMIS text.</exception>
+    /// <exception cref="NotSupportedException">When the file is not a SIMIS document, such as a texture, or is a binary SIMIS file, compressed or not.</exception>
     /// <exception cref="FormatException">When the file is not valid text in the detected encoding, or its compressed data is corrupt.</exception>
     public string LoadText(string filePath, Encoding? encoding)
     {

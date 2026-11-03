@@ -139,8 +139,7 @@ public class SimisProcessorTest
     [Theory]
     [InlineData("SIMISA@@@@@@@@@@JINX0s1t______")]
     [InlineData("SIMISA@@@@@@@@@@JINX0D0t______")]
-    [InlineData("SIMISA@@@@@@@@@@JINX0b")]
-    [InlineData("SIMISA@@@@@@@@@@")]
+    [InlineData("SIMISA@@@@@@@@@@JINX0x1t")]
     public void LoadAcceptsTextHeaders(string header)
     {
         // Arrange
@@ -152,6 +151,39 @@ public class SimisProcessorTest
         // Assert
         Assert.Equal(header, document.Root.Nodes[0].Value);
         Assert.Equal("10t", Assert.Single(SimisPathService.FindNodesByPath(document.Root, "/Wagon/Mass/[1]")).Value);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("Wagon ( Mass ( 10t ) )\r\n")]
+    [InlineData("SIMISA@@@@@@@@@@\r\n\r\nWagon ( Mass ( 10t ) )\r\n")]
+    [InlineData("SIMISA@@@@@@@@@@JINX0b\r\n\r\nWagon ( Mass ( 10t ) )\r\n")]
+    [InlineData("SIMISA@@@@@@@@@@JINX0D0x______\r\n\r\nWagon ( Mass ( 10t ) )\r\n")]
+    [InlineData("simisa@@@@@@@@@@JINX0D0t______\r\n\r\nWagon ( Mass ( 10t ) )\r\n")]
+    [InlineData("\r\nSIMISA@@@@@@@@@@JINX0D0t______\r\n\r\nWagon ( Mass ( 10t ) )\r\n")]
+    public void LoadRejectsTextThatIsNotSimisDocument(string text)
+    {
+        // Arrange
+        byte[] content = [.. Encoding.Unicode.GetPreamble(), .. Encoding.Unicode.GetBytes(text)];
+
+        // Act & Assert
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() => WithTempFile(content, processor.Load));
+        Assert.Contains("not a SIMIS document", exception.Message);
+    }
+
+    [Theory]
+    [InlineData(new byte[] { 0x01, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0xFF, 0x80, 0xC3 }, true)]
+    [InlineData(new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0xFF, 0x80, 0xC3 }, false)]
+    [InlineData(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x80, 0xC3 }, false)]
+    public void LoadRejectsBinaryContentThatIsNotSimisDocument(byte[] data, bool withSimisHeader)
+    {
+        // Arrange: the first case starts like an uncompressed texture, the second like a PNG image, and the third like a terrain height map.
+        // The data is not valid UTF-8, so decoding it would fail with a misleading FormatException.
+        byte[] content = [.. withSimisHeader ? "SIMISA@@@@@@@@@@"u8 : [], .. data];
+
+        // Act & Assert
+        NotSupportedException exception = Assert.Throws<NotSupportedException>(() => WithTempFile(content, processor.Load));
+        Assert.Contains("not a SIMIS document", exception.Message);
     }
 
     [Theory]
