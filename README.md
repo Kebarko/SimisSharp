@@ -27,21 +27,18 @@ Binary SIMIS files, such as most shapes (`.s`), terrain (`.t`) and textures (`.a
 
 ## Installation
 
-SimisSharp is not published as a NuGet package yet. Add it to your solution from source:
+SimisSharp is published on NuGet as [SimisSharp](https://www.nuget.org/packages/SimisSharp). In the folder of your project, add the package:
 
-1. Clone the repository:
+```
+dotnet add package SimisSharp
+```
 
-   ```
-   git clone https://github.com/Kebarko/SimisSharp.git
-   ```
+To use the library from source instead, clone the repository and add a reference to the project, using the path to where you cloned it:
 
-2. In the folder of your project, add a reference to the library, using the path to where you cloned it:
-
-   ```
-   dotnet add reference ../SimisSharp/src/SimisSharp/SimisSharp.csproj
-   ```
-
-Alternatively, build the library with `dotnet build src/SimisSharp -c Release` and reference `SimisSharp.dll` from `src/SimisSharp/bin/Release/net10.0`. Keep `SimisSharp.xml` next to it, so that the documentation shows in IntelliSense.
+```
+git clone https://github.com/Kebarko/SimisSharp.git
+dotnet add reference ../SimisSharp/src/SimisSharp/SimisSharp.csproj
+```
 
 ## Configuration
 

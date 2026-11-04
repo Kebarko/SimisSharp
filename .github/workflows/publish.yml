@@ -1,0 +1,63 @@
+# Publishes SimisSharp to nuget.org when a version tag such as v0.1.0 is pushed.
+# It signs in with Trusted Publishing, so no API key is stored in the repository.
+# The nuget.org policy must name this repository and the workflow file publish.yml.
+
+name: Publish
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Check that the tag matches the version
+        run: |
+          version=$(dotnet msbuild src/SimisSharp/SimisSharp.csproj -getProperty:Version)
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::The tag $GITHUB_REF_NAME does not match the version $version in SimisSharp.csproj."
+            exit 1
+          fi
+
+      - name: Test
+        run: dotnet test -c Release
+
+      - name: Pack
+        run: dotnet pack src/SimisSharp/SimisSharp.csproj -c Release -o artifacts
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: packages
+          path: artifacts/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write  # Lets the job get a GitHub OIDC token for Trusted Publishing.
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: packages
+          path: artifacts
+
+      - name: Sign in to nuget.org
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: ${{ secrets.NUGET_USER }}  # The nuget.org profile name, not the email address.
+
+      # Also pushes the symbol package (.snupkg) next to each .nupkg.
+      - name: Push
+        run: dotnet nuget push "artifacts/*.nupkg" --api-key "${{ steps.login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
