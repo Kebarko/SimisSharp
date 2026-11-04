@@ -14,7 +14,11 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # Windows, because some tests check how saving behaves on Windows, such as keeping file attributes.
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v7
 
@@ -51,6 +55,10 @@ jobs:
         with:
           name: packages
           path: artifacts
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
 
       - name: Sign in to nuget.org
         uses: NuGet/login@v1
